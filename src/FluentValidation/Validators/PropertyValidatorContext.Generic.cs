@@ -29,7 +29,7 @@ namespace FluentValidation.Validators {
 		internal Lazy<TProperty> Accessor => _propertyValueAccessor;
 
 		public ValidationContext<T> ParentContext { get; private set; }
-		public PropertyRule<T, TProperty> Rule { get; private set; }
+		public PropertyRule Rule { get; private set; }
 		public string PropertyName { get; private set; }
 
 		public string DisplayName => Rule.GetDisplayName(ParentContext);
@@ -54,14 +54,14 @@ namespace FluentValidation.Validators {
 		object ICommonContext.PropertyValue => PropertyValue;
 		object ICommonContext.InstanceToValidate => InstanceToValidate;
 
-		public PropertyValidatorContext(ValidationContext<T> parentContext, PropertyRule<T,TProperty> rule, string propertyName, TProperty propertyValue) {
+		public PropertyValidatorContext(ValidationContext<T> parentContext, PropertyRule rule, string propertyName, TProperty propertyValue) {
 			ParentContext = parentContext;
 			Rule = rule;
 			PropertyName = propertyName;
 			_propertyValue = propertyValue;
 		}
 
-		public PropertyValidatorContext(ValidationContext<T> parentContext, PropertyRule<T,TProperty> rule, string propertyName, Lazy<TProperty> propertyValueAccessor) {
+		public PropertyValidatorContext(ValidationContext<T> parentContext, PropertyRule rule, string propertyName, Lazy<TProperty> propertyValueAccessor) {
 			ParentContext = parentContext;
 			Rule = rule;
 			PropertyName = propertyName;
