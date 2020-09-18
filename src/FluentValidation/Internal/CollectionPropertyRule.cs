@@ -29,73 +29,33 @@ namespace FluentValidation.Internal {
 	using Results;
 	using Validators;
 
-	/// <summary>
-	/// Rule definition for collection properties
-	/// </summary>
-	/// <typeparam name="TElement"></typeparam>
-	/// <typeparam name="T"></typeparam>
-	public class CollectionPropertyRule<T, TElement> : PropertyRule {
-		/// <summary>
-		/// Initializes new instance of the CollectionPropertyRule class
-		/// </summary>
-		/// <param name="member"></param>
-		/// <param name="propertyFunc"></param>
-		/// <param name="expression"></param>
-		/// <param name="cascadeModeThunk"></param>
-		/// <param name="typeToValidate"></param>
-		/// <param name="containerType"></param>
-		public CollectionPropertyRule(MemberInfo member, Func<object, object> propertyFunc, LambdaExpression expression, Func<CascadeMode> cascadeModeThunk, Type typeToValidate, Type containerType) : base(member, propertyFunc, expression, cascadeModeThunk, typeToValidate, containerType) {
+	internal class CollectionRuleExecutor<T, TElement> : RuleExecutor<T, IEnumerable<TElement>, TElement> {
+		public CollectionRuleExecutor(Func<T, IEnumerable<TElement>> propertyFunc) : base(propertyFunc) {
 		}
 
-		/// <summary>
-		/// Filter that should include/exclude items in the collection.
-		/// </summary>
-		public Func<TElement, bool> Filter { get; set; }
 
-		/// <summary>
-		/// Constructs the indexer in the property name associated with the error message.
-		/// By default this is "[" + index + "]"
-		/// </summary>
-		public Func<object, IEnumerable<TElement>, TElement, int, string> IndexBuilder { get; set; }
+		private static string InferPropertyName(LambdaExpression expression) {
+			var paramExp = expression.Body as ParameterExpression;
 
-		/// <summary>
-		/// Creates a new property rule from a lambda expression.
-		/// </summary>
-		public static CollectionPropertyRule<T, TElement> Create(Expression<Func<T, IEnumerable<TElement>>> expression, Func<CascadeMode> cascadeModeThunk) {
-			var member = expression.GetMember();
-			var compiled = expression.Compile();
+			if (paramExp == null) {
+				throw new InvalidOperationException("Could not infer property name for expression: " + expression + ". Please explicitly specify a property name by calling OverridePropertyName as part of the rule chain. Eg: RuleForEach(x => x).NotNull().OverridePropertyName(\"MyProperty\")");
+			}
 
-			return new CollectionPropertyRule<T, TElement>(member, compiled.CoerceToNonGeneric(), expression, cascadeModeThunk, typeof(TElement), typeof(T));
+			return paramExp.Name;
 		}
 
-		/// <summary>
-		/// Invokes the validator asynchronously
-		/// </summary>
-		/// <param name="context"></param>
-		/// <param name="validator"></param>
-		/// <param name="propertyName"></param>
-		/// <param name="cancellation"></param>
-		/// <returns></returns>
-		protected override async Task<IEnumerable<ValidationFailure>> InvokePropertyValidatorAsync(IValidationContext context, IPropertyValidator validator, string propertyName, CancellationToken cancellation) {
+		private protected override async Task<IEnumerable<ValidationFailure>> InvokePropertyValidatorAsync(ValidationContext<T> context, PropertyRule<T> rule, IPropertyValidator<T, TElement> validator, string propertyName, Lazy<IEnumerable<TElement>> accessor, CancellationToken cancellation) {
+			var collectionRule = (CollectionPropertyRule<T, TElement>) rule;
+
 			if (string.IsNullOrEmpty(propertyName)) {
-				propertyName = InferPropertyName(Expression);
+				propertyName = InferPropertyName(rule.Expression);
 			}
 
-			PropertyValidatorContext propertyContext;
-			// TODO: For FV10 this will come as a parameter rather than in RootContextData.
-			if (context.RootContextData.TryGetValue("__FV_CurrentAccessor", out var a) && a is Lazy<object> accessor) {
-				propertyContext = new PropertyValidatorContext(context, this, propertyName, accessor);
-			}
-			else {
-#pragma warning disable 618
-				propertyContext = new PropertyValidatorContext(context, this, propertyName);
-#pragma warning restore 618
-			}
 
-			if (!validator.Options.InvokeCondition(propertyContext)) return Enumerable.Empty<ValidationFailure>();
-			if (!await validator.Options.InvokeAsyncCondition(propertyContext, cancellation)) return Enumerable.Empty<ValidationFailure>();
+			if (!validator.Options.InvokeCondition(context)) return Enumerable.Empty<ValidationFailure>();
+			if (!await validator.Options.InvokeAsyncCondition(context, cancellation)) return Enumerable.Empty<ValidationFailure>();
 
-			var collectionPropertyValue = propertyContext.PropertyValue as IEnumerable<TElement>;
+			var collectionPropertyValue = accessor.Value;
 
 			if (collectionPropertyValue != null) {
 				if (string.IsNullOrEmpty(propertyName)) {
@@ -105,15 +65,15 @@ namespace FluentValidation.Internal {
 				var actualContext = ValidationContext<T>.GetFromNonGenericContext(context);
 
 				var validatorTasks = collectionPropertyValue.Select(async (element, index) => {
-					if (Filter != null && !Filter(element)) {
+					if (collectionRule.Filter != null && !collectionRule.Filter(element)) {
 						return Enumerable.Empty<ValidationFailure>();
 					}
 
 					string indexer = index.ToString();
 					bool useDefaultIndexFormat = true;
 
-					if (IndexBuilder != null) {
-						indexer = IndexBuilder(context.InstanceToValidate, collectionPropertyValue, element, index);
+					if (collectionRule.IndexBuilder != null) {
+						indexer = collectionRule.IndexBuilder(context.InstanceToValidate, collectionPropertyValue, element, index);
 						useDefaultIndexFormat = false;
 					}
 
@@ -121,18 +81,13 @@ namespace FluentValidation.Internal {
 					newContext.PropertyChain.Add(propertyName);
 					newContext.PropertyChain.AddIndexer(indexer, useDefaultIndexFormat);
 
-					object valueToValidate = element;
+					// if (collectionRule.Transformer != null) {
+					// valueToValidate = collectionRule.Transformer(element);
+					// }
 
-					if (Transformer != null) {
-						valueToValidate = Transformer(element);
-					}
-
-					var newPropertyContext = new PropertyValidatorContext(newContext, this, newContext.PropertyChain.ToString(), valueToValidate);
+					var newPropertyContext = new PropertyValidatorContext<T, TElement>(newContext, rule, newContext.PropertyChain.ToString(), element);
 					newPropertyContext.MessageFormatter.AppendArgument("CollectionIndex", index);
-
-#pragma warning disable 618
 					return await validator.ValidateAsync(newPropertyContext, cancellation);
-#pragma warning restore 618
 				});
 
 				var results = new List<ValidationFailure>();
@@ -148,45 +103,20 @@ namespace FluentValidation.Internal {
 			return Enumerable.Empty<ValidationFailure>();
 		}
 
-		private string InferPropertyName(LambdaExpression expression) {
-			var paramExp = expression.Body as ParameterExpression;
+		private protected override IEnumerable<ValidationFailure> InvokePropertyValidator(ValidationContext<T> context, PropertyRule<T> rule, IPropertyValidator<T, TElement> validator, string propertyName, Lazy<IEnumerable<TElement>> accessor) {
+			var collectionRule = (CollectionPropertyRule<T, TElement>) rule;
 
-			if (paramExp == null) {
-				throw new InvalidOperationException("Could not infer property name for expression: " + expression + ". Please explicitly specify a property name by calling OverridePropertyName as part of the rule chain. Eg: RuleForEach(x => x).NotNull().OverridePropertyName(\"MyProperty\")");
-			}
 
-			return paramExp.Name;
-		}
-
-		/// <summary>
-		/// Invokes the validator
-		/// </summary>
-		/// <param name="context"></param>
-		/// <param name="validator"></param>
-		/// <param name="propertyName"></param>
-		/// <returns></returns>
-		protected override IEnumerable<Results.ValidationFailure> InvokePropertyValidator(IValidationContext context, Validators.IPropertyValidator validator, string propertyName) {
-			if (string.IsNullOrEmpty(propertyName)) {
-				propertyName = InferPropertyName(Expression);
-			}
-
-			PropertyValidatorContext propertyContext;
-			// TODO: For FV10 this will come as a parameter rather than in RootContextData.
-			if (context.RootContextData.TryGetValue("__FV_CurrentAccessor", out var a) && a is Lazy<object> accessor) {
-				propertyContext = new PropertyValidatorContext(context, this, propertyName, accessor);
-			}
-			else {
-#pragma warning disable 618
-				propertyContext = new PropertyValidatorContext(context, this, propertyName);
-#pragma warning restore 618
-			}
-
-			if (!validator.Options.InvokeCondition(propertyContext)) return Enumerable.Empty<ValidationFailure>();
+			if (!validator.Options.InvokeCondition(context)) return Enumerable.Empty<ValidationFailure>();
 			// There's no need to check for the AsyncCondition here. If the validator has an async condition, then
 			// the parent PropertyRule will call InvokePropertyValidatorAsync instead.
 
+			if (string.IsNullOrEmpty(propertyName)) {
+				propertyName = InferPropertyName(collectionRule.Expression);
+			}
+
 			var results = new List<ValidationFailure>();
-			var collectionPropertyValue = propertyContext.PropertyValue as IEnumerable<TElement>;
+			var collectionPropertyValue = accessor.Value;
 
 			int count = 0;
 
@@ -200,15 +130,15 @@ namespace FluentValidation.Internal {
 				foreach (var element in collectionPropertyValue) {
 					int index = count++;
 
-					if (Filter != null && !Filter(element)) {
+					if (collectionRule.Filter != null && !collectionRule.Filter(element)) {
 						continue;
 					}
 
 					string indexer = index.ToString();
 					bool useDefaultIndexFormat = true;
 
-					if (IndexBuilder != null) {
-						indexer = IndexBuilder(context.InstanceToValidate, collectionPropertyValue, element, index);
+					if (collectionRule.IndexBuilder != null) {
+						indexer = collectionRule.IndexBuilder(context.InstanceToValidate, collectionPropertyValue, element, index);
 						useDefaultIndexFormat = false;
 					}
 
@@ -216,27 +146,57 @@ namespace FluentValidation.Internal {
 					newContext.PropertyChain.Add(propertyName);
 					newContext.PropertyChain.AddIndexer(indexer, useDefaultIndexFormat);
 
-					object valueToValidate = element;
+					// if (Transformer != null) {
+					// valueToValidate = Transformer(element);
+					// }
 
-					if (Transformer != null) {
-						valueToValidate = Transformer(element);
-					}
-
-					var newPropertyContext = new PropertyValidatorContext(newContext, this, newContext.PropertyChain.ToString(), valueToValidate);
+					var newPropertyContext = new PropertyValidatorContext<T, TElement>(newContext, rule, newContext.PropertyChain.ToString(), element);
 					newPropertyContext.MessageFormatter.AppendArgument("CollectionIndex", index);
-#pragma warning disable 618
 					results.AddRange(validator.Validate(newPropertyContext));
-#pragma warning restore 618
 				}
 			}
 
 			return results;
 		}
 
-		internal override object GetPropertyValue(object instanceToValidate) {
-			// Unlike the base class, we do not want to perform the transformation in here, just return the raw value.
-			// with collection rules, the transformation should be applied to individual elements instead.
-			return PropertyFunc(instanceToValidate);
+		private protected override Task<IEnumerable<ValidationFailure>> InvokeLegacyPropertyValidatorAsync(ValidationContext<T> context, PropertyRule<T> rule, IPropertyValidator validator, string propertyName, Lazy<object> accessor, CancellationToken cancellation) {
+			throw new NotImplementedException();
+		}
+
+		private protected override IEnumerable<ValidationFailure> InvokeLegacyPropertyValidator(ValidationContext<T> context, PropertyRule<T> rule, IPropertyValidator validator, string propertyName, Lazy<object> accessor) {
+			throw new NotImplementedException();
+		}
+	}
+
+	/// <summary>
+	/// Rule definition for collection properties
+	/// </summary>
+	/// <typeparam name="TElement"></typeparam>
+	/// <typeparam name="T"></typeparam>
+	public class CollectionPropertyRule<T, TElement> : PropertyRule<T> {
+		internal CollectionPropertyRule(MemberInfo member, IRuleExecutor<T> executor, LambdaExpression expression, Func<CascadeMode> cascadeModeThunk, Type typeToValidate, Type containerType)
+			: base(member, executor, expression, cascadeModeThunk, typeToValidate) {
+		}
+
+		/// <summary>
+		/// Filter that should include/exclude items in the collection.
+		/// </summary>
+		public Func<TElement, bool> Filter { get; set; }
+
+		/// <summary>
+		/// Constructs the indexer in the property name associated with the error message.
+		/// By default this is "[" + index + "]"
+		/// </summary>
+		public Func<T, IEnumerable<TElement>, TElement, int, string> IndexBuilder { get; set; }
+
+		/// <summary>
+		/// Creates a new property rule from a lambda expression.
+		/// </summary>
+		public static CollectionPropertyRule<T, TElement> Create(Expression<Func<T, IEnumerable<TElement>>> expression, Func<CascadeMode> cascadeModeThunk) {
+			var member = expression.GetMember();
+			//TODO: Expression caching.
+			var compiled = expression.Compile();
+			return new CollectionPropertyRule<T, TElement>(member, new CollectionRuleExecutor<T, TElement>(compiled), expression, cascadeModeThunk, typeof(TElement), typeof(T));
 		}
 	}
 }

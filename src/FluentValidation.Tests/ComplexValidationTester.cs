@@ -33,6 +33,7 @@ namespace FluentValidation.Tests {
 
 		public ComplexValidationTester() {
 			validator = new PersonValidator();
+
 			person = new Person {
 				Address = new Address {
 					Country = new Country()

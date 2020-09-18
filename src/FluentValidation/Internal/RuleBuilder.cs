@@ -30,7 +30,7 @@ namespace FluentValidation.Internal {
 		/// <summary>
 		/// The rule being created by this RuleBuilder.
 		/// </summary>
-		public PropertyRule Rule { get; }
+		public PropertyRule<T> Rule { get; }
 
 		/// <summary>
 		/// Parent validator
@@ -40,7 +40,7 @@ namespace FluentValidation.Internal {
 		/// <summary>
 		/// Creates a new instance of the <see cref="RuleBuilder{T,TProperty}">RuleBuilder</see> class.
 		/// </summary>
-		public RuleBuilder(PropertyRule rule, IValidator<T> parent) {
+		public RuleBuilder(PropertyRule<T> rule, IValidator<T> parent) {
 			Rule = rule;
 			ParentValidator = parent;
 		}
@@ -107,12 +107,12 @@ namespace FluentValidation.Internal {
 			return this;
 		}
 
-		IRuleBuilderOptions<T, TProperty> IConfigurable<PropertyRule, IRuleBuilderOptions<T, TProperty>>.Configure(Action<PropertyRule> configurator) {
+		IRuleBuilderOptions<T, TProperty> IConfigurable<PropertyRule<T>, IRuleBuilderOptions<T, TProperty>>.Configure(Action<PropertyRule<T>> configurator) {
 			configurator(Rule);
 			return this;
 		}
 
-		IRuleBuilderInitial<T, TProperty> IConfigurable<PropertyRule, IRuleBuilderInitial<T, TProperty>>.Configure(Action<PropertyRule> configurator) {
+		IRuleBuilderInitial<T, TProperty> IConfigurable<PropertyRule<T>, IRuleBuilderInitial<T, TProperty>>.Configure(Action<PropertyRule<T>> configurator) {
 			configurator(Rule);
 			return this;
 		}
@@ -124,8 +124,9 @@ namespace FluentValidation.Internal {
 
 		public IRuleBuilderInitial<T, TNew> Transform<TNew>(Func<TProperty, TNew> transformationFunc) {
 			if (transformationFunc == null) throw new ArgumentNullException(nameof(transformationFunc));
-			Rule.Transformer = transformationFunc.CoerceToNonGeneric();
-			return new RuleBuilder<T, TNew>(Rule, ParentValidator);
+			// Rule.Transformer = transformationFunc.CoerceToNonGeneric();
+			throw new NotImplementedException();
+			// return new RuleBuilder<T, TNew>(Rule, ParentValidator);
 		}
 	}
 

@@ -17,7 +17,7 @@ namespace FluentValidation.Validators {
 		Type ValidatorType { get; }
 	}
 
-	public class ChildValidatorAdaptor<T,TProperty> : NoopPropertyValidator, IChildValidatorAdaptor {
+	public class ChildValidatorAdaptor<T,TProperty> : NoopPropertyValidator<T, TProperty>, IChildValidatorAdaptor {
 		private readonly Func<ICommonContext, IValidator<TProperty>> _validatorProvider;
 		private readonly IValidator<TProperty> _validator;
 
@@ -37,7 +37,7 @@ namespace FluentValidation.Validators {
 			ValidatorType = validatorType;
 		}
 
-		public override IEnumerable<ValidationFailure> Validate(PropertyValidatorContext context) {
+		public override IEnumerable<ValidationFailure> Validate(PropertyValidatorContext<T,TProperty> context) {
 			if (context.PropertyValue == null) {
 				return Enumerable.Empty<ValidationFailure>();
 			}
@@ -63,7 +63,7 @@ namespace FluentValidation.Validators {
 			return results;
 		}
 
-		public override async Task<IEnumerable<ValidationFailure>> ValidateAsync(PropertyValidatorContext context, CancellationToken cancellation) {
+		public override async Task<IEnumerable<ValidationFailure>> ValidateAsync(PropertyValidatorContext<T,TProperty> context, CancellationToken cancellation) {
 			if (context.PropertyValue == null) {
 				return Enumerable.Empty<ValidationFailure>();
 			}
@@ -88,28 +88,16 @@ namespace FluentValidation.Validators {
 			return result.Errors;
 		}
 
-		public virtual IValidator<TProperty> GetValidator(PropertyValidatorContext context) {
+		public virtual IValidator<TProperty> GetValidator(PropertyValidatorContext<T,TProperty> context) {
 			context.Guard("Cannot pass a null context to GetValidator", nameof(context));
 
 			return _validatorProvider != null ? _validatorProvider(context) : _validator;
 		}
 
-		protected virtual IValidationContext CreateNewValidationContextForChildValidator(PropertyValidatorContext context, IValidator<TProperty> validator) {
+		protected virtual ValidationContext<TProperty> CreateNewValidationContextForChildValidator(PropertyValidatorContext<T,TProperty> context, IValidator<TProperty> validator) {
 			var selector = RuleSets?.Length > 0 ? new RulesetValidatorSelector(RuleSets) : null;
 			var parentContext = ValidationContext<T>.GetFromNonGenericContext(context.ParentContext);
-			var newContext = parentContext.CloneForChildValidator((TProperty)context.PropertyValue, PassThroughParentContext, selector);
-
-			if(!parentContext.IsChildCollectionContext)
-				newContext.PropertyChain.Add(context.Rule.PropertyName);
-
-			return newContext;
-		}
-
-		[Obsolete("This overload is not used and will be removed from FluentValidation 10.")]
-		protected IValidationContext CreateNewValidationContextForChildValidator(object instanceToValidate, PropertyValidatorContext context) {
-			var selector = RuleSets?.Length > 0 ? new RulesetValidatorSelector(RuleSets) : null;
-			var parentContext = ValidationContext<T>.GetFromNonGenericContext(context.ParentContext);
-			var newContext = parentContext.CloneForChildValidator((TProperty)instanceToValidate, PassThroughParentContext, selector);
+			var newContext = parentContext.CloneForChildValidator(context.PropertyValue, PassThroughParentContext, selector);
 
 			if(!parentContext.IsChildCollectionContext)
 				newContext.PropertyChain.Add(context.Rule.PropertyName);
@@ -121,7 +109,7 @@ namespace FluentValidation.Validators {
 			return context.IsAsync() || Options.HasAsyncCondition;
 		}
 
-		private void HandleCollectionIndex(PropertyValidatorContext context, out object originalIndex, out object index) {
+		private void HandleCollectionIndex(PropertyValidatorContext<T,TProperty> context, out object originalIndex, out object index) {
 			originalIndex = null;
 			if (context.MessageFormatter.PlaceholderValues.TryGetValue("CollectionIndex", out index)) {
 				context.ParentContext.RootContextData.TryGetValue("__FV_CollectionIndex", out originalIndex);
@@ -129,7 +117,7 @@ namespace FluentValidation.Validators {
 			}
 		}
 
-		private void ResetCollectionIndex(PropertyValidatorContext context, object originalIndex, object index) {
+		private void ResetCollectionIndex(PropertyValidatorContext<T,TProperty> context, object originalIndex, object index) {
 			// Reset the collection index
 			if (index != null) {
 				if (originalIndex != null) {

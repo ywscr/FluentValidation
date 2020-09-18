@@ -31,19 +31,16 @@ namespace FluentValidation.Internal {
 	/// <summary>
 	/// Defines a rule associated with a property.
 	/// </summary>
-	public class PropertyRule<T> : IValidationRule {
+	public class PropertyRule<T> : IValidationRule<T> {
 		private readonly List<IPropertyValidator> _validators = new List<IPropertyValidator>();
 		private Func<CascadeMode> _cascadeModeThunk;
 		private string _propertyDisplayName;
 		private string _propertyName;
-		private string[] _ruleSet = new string[0];
 		private Func<ValidationContext<T>, bool> _condition;
 		private Func<ValidationContext<T>, CancellationToken, Task<bool>> _asyncCondition;
-
-#pragma warning disable 618
-		//TODO: Replace with Func<IValidationContext, string> for FV 10.
-		private IStringSource _displayNameSource;
-#pragma warning restore 618
+		private List<IValidationRule<T>> _dependentRules;
+		private string _displayName;
+		private Func<ValidationContext<T>, string> _displayNameFactory;
 
 		internal IRuleExecutor<T> Executor { get; set; }
 
@@ -67,23 +64,14 @@ namespace FluentValidation.Internal {
 		/// </summary>
 		public LambdaExpression Expression { get; }
 
-		/// <summary>
-		/// String source that can be used to retrieve the display name (if null, falls back to the property name)
-		/// </summary>
-		[Obsolete("This property is deprecated and will be removed in FluentValidation 10. Use the GetDisplayName and SetDisplayName instead.")]
-		public IStringSource DisplayName {
-			get => _displayNameSource;
-			set => _displayNameSource = value;
-		}
 
 		/// <summary>
 		/// Sets the display name for the property.
 		/// </summary>
 		/// <param name="name">The property's display name</param>
 		public void SetDisplayName(string name) {
-#pragma warning disable 618
-			_displayNameSource = new StaticStringSource(name);
-#pragma warning restore 618
+			_displayName = name;
+			_displayNameFactory = null;
 		}
 
 		/// <summary>
@@ -91,19 +79,14 @@ namespace FluentValidation.Internal {
 		/// </summary>
 		/// <param name="factory">The function for building the display name</param>
 		public void SetDisplayName(Func<IValidationContext, string> factory) {
-			if (factory == null) throw new ArgumentNullException(nameof(factory));
-#pragma warning disable 618
-			_displayNameSource = new BackwardsCompatibleStringSource<IValidationContext>(factory);
-#pragma warning restore 618
+			_displayNameFactory = factory;
+			_displayName = null;
 		}
 
 		/// <summary>
 		/// Rule set that this rule belongs to (if specified)
 		/// </summary>
-		public string[] RuleSets {
-			get => _ruleSet;
-			set => _ruleSet = value ?? new string[0];
-		}
+		public string[] RuleSets { get; set; }
 
 		/// <summary>
 		/// Function that will be invoked if any of the validators associated with this rule fail.
@@ -133,15 +116,6 @@ namespace FluentValidation.Internal {
 		/// </summary>
 		public IEnumerable<IPropertyValidator> Validators => _validators;
 
-		/// <summary>
-		/// Creates a new property rule.
-		/// </summary>
-		/// <param name="member">Property</param>
-		/// <param name="propertyFunc">Function to get the property value</param>
-		/// <param name="expression">Lambda expression used to create the rule</param>
-		/// <param name="cascadeModeThunk">Function to get the cascade mode.</param>
-		/// <param name="typeToValidate">Type to validate</param>
-		/// <param name="containerType">Container type that owns the property</param>
 		internal PropertyRule(MemberInfo member, IRuleExecutor<T> ruleExecutor, LambdaExpression expression, Func<CascadeMode> cascadeModeThunk, Type typeToValidate) {
 			Member = member;
 			Executor = ruleExecutor;
@@ -149,11 +123,8 @@ namespace FluentValidation.Internal {
 			TypeToValidate = typeToValidate;
 			_cascadeModeThunk = cascadeModeThunk;
 
-			DependentRules = new List<IValidationRule>();
 			PropertyName = ValidatorOptions.Global.PropertyNameResolver(typeof(T), member, expression);
-#pragma warning disable 618
-			_displayNameSource = new BackwardsCompatibleStringSource<IValidationContext>(context => ValidatorOptions.Global.DisplayNameResolver(typeof(T), member, expression));
-#pragma warning restore 618
+			_displayNameFactory = context => ValidatorOptions.Global.DisplayNameResolver(typeof(T), member, expression);
 		}
 
 		/// <summary>
@@ -210,7 +181,7 @@ namespace FluentValidation.Internal {
 		/// Returns null if it is not a property being validated (eg a method call)
 		/// </summary>
 		public string PropertyName {
-			get { return _propertyName; }
+			get => _propertyName;
 			set {
 				_propertyName = value;
 				_propertyDisplayName = _propertyName.SplitPascalCase();
@@ -225,33 +196,14 @@ namespace FluentValidation.Internal {
 		/// <summary>
 		/// Dependent rules
 		/// </summary>
-		public List<IValidationRule> DependentRules { get; }
+		public List<IValidationRule<T>> DependentRules => _dependentRules ??= new List<IValidationRule<T>>();
 
 		/// <summary>
 		/// Display name for the property.
 		/// </summary>
-		[Obsolete("Calling GetDisplayName without a context parameter is deprecated and will be removed in FluentValidation 10. If you really need this behaviour, you can call the overload that takes a context but pass in null.")]
-		public string GetDisplayName() {
-			return GetDisplayName(null);
-		}
+		public string GetDisplayName(ValidationContext<T> context) =>
+			_displayNameFactory?.Invoke(context) ?? _displayName ?? _propertyDisplayName;
 
-		/// <summary>
-		/// Display name for the property.
-		/// </summary>
-		public string GetDisplayName(ICommonContext context) {
-			//TODO: For FV10, change the parameter from ICommonContext to IValidationContext.
-			string result = null;
-
-			if (_displayNameSource != null) {
-				result = _displayNameSource.GetString(context);
-			}
-
-			if (result == null) {
-				result = _propertyDisplayName;
-			}
-
-			return result;
-		}
 
 		/// <summary>
 		/// Performs validation using a validation context and returns a collection of Validation Failures.
@@ -272,19 +224,19 @@ namespace FluentValidation.Internal {
 			// Ensure that this rule is allowed to run.
 			// The validatselector has the opportunity to veto this before any of the validators execute.
 			if (!context.Selector.CanExecute(this, propertyName, context)) {
-				yield break;
+				return Enumerable.Empty<ValidationFailure>();
 			}
 
 			if (_condition != null) {
 				if (!_condition(context)) {
-					yield break;
+					return Enumerable.Empty<ValidationFailure>();
 				}
 			}
 
 			// TODO: For FV 9, throw an exception by default if synchronous validator has async condition.
 			if (_asyncCondition != null) {
 				if (!_asyncCondition(context, default).GetAwaiter().GetResult()) {
-					yield break;
+					return Enumerable.Empty<ValidationFailure>();
 				}
 			}
 
@@ -298,13 +250,11 @@ namespace FluentValidation.Internal {
 			}
 			else {
 				foreach (var dependentRule in DependentRules) {
-#pragma warning disable 618
-					foreach (var failure in dependentRule.Validate(context)) {
-#pragma warning restore 618
-						yield return failure;
-					}
+					failures.AddRange(dependentRule.Validate(context));
 				}
 			}
+
+			return failures;
 		}
 
 		/// <summary>
@@ -356,32 +306,13 @@ namespace FluentValidation.Internal {
 				OnFailure?.Invoke(context.InstanceToValidate, failures);
 			}
 			else {
-				failures.AddRange(await RunDependentRulesAsync(context, cancellation));
+				foreach (var rule in DependentRules) {
+					cancellation.ThrowIfCancellationRequested();
+					failures.AddRange(await rule.ValidateAsync(context, cancellation));
+				}
 			}
 
 			return failures;
-		}
-
-		private async Task<IEnumerable<ValidationFailure>> RunDependentRulesAsync(IValidationContext context, CancellationToken cancellation) {
-			var failures = new List<ValidationFailure>();
-
-			foreach (var rule in DependentRules) {
-				cancellation.ThrowIfCancellationRequested();
-#pragma warning disable 618
-				failures.AddRange(await rule.ValidateAsync(context, cancellation));
-#pragma warning restore 618
-			}
-
-			return failures;
-		}
-
-		// TODO: Remove Backwards compatibility methods.
-		IEnumerable<ValidationFailure> IValidationRule.Validate(IValidationContext context) {
-			return Validate(ValidationContext<T>.GetFromNonGenericContext(context));
-		}
-
-		Task<IEnumerable<ValidationFailure>> IValidationRule.ValidateAsync(IValidationContext context, CancellationToken cancellation) {
-			return ValidateAsync(ValidationContext<T>.GetFromNonGenericContext(context), cancellation);
 		}
 
 		/// <summary>
@@ -389,19 +320,14 @@ namespace FluentValidation.Internal {
 		/// </summary>
 		/// <param name="predicate"></param>
 		/// <param name="applyConditionTo"></param>
-		public void ApplyCondition(Func<PropertyValidatorContext, bool> predicate, ApplyConditionTo applyConditionTo = ApplyConditionTo.AllValidators) {
+		public void ApplyCondition(Func<ValidationContext<T>, bool> predicate, ApplyConditionTo applyConditionTo = ApplyConditionTo.AllValidators) {
 			// Default behaviour for When/Unless as of v1.3 is to apply the condition to all previous validators in the chain.
-			if (applyConditionTo == ApplyConditionTo.AllValidators) {
-				foreach (var validator in Validators) {
-					validator.Options.ApplyCondition(predicate);
-				}
+			Executor.ApplyCondition(this, predicate, applyConditionTo);
 
+			if (applyConditionTo == ApplyConditionTo.AllValidators) {
 				foreach (var dependentRule in DependentRules) {
 					dependentRule.ApplyCondition(predicate, applyConditionTo);
 				}
-			}
-			else {
-				CurrentValidator.Options.ApplyCondition(predicate);
 			}
 		}
 
@@ -410,23 +336,15 @@ namespace FluentValidation.Internal {
 		/// </summary>
 		/// <param name="predicate"></param>
 		/// <param name="applyConditionTo"></param>
-		public void ApplyAsyncCondition(Func<PropertyValidatorContext, CancellationToken, Task<bool>> predicate, ApplyConditionTo applyConditionTo = ApplyConditionTo.AllValidators) {
+		public void ApplyAsyncCondition(Func<ValidationContext<T>, CancellationToken, Task<bool>> predicate, ApplyConditionTo applyConditionTo = ApplyConditionTo.AllValidators) {
 			// Default behaviour for When/Unless as of v1.3 is to apply the condition to all previous validators in the chain.
-			if (applyConditionTo == ApplyConditionTo.AllValidators) {
-				foreach (var validator in Validators) {
-					validator.Options.ApplyAsyncCondition(predicate);
-				}
-
-				foreach (var dependentRule in DependentRules) {
-					dependentRule.ApplyAsyncCondition(predicate, applyConditionTo);
-				}
-			}
-			else {
-				CurrentValidator.Options.ApplyAsyncCondition(predicate);
+			Executor.ApplyAsyncCondition(this, predicate, applyConditionTo);
+			foreach (var dependentRule in DependentRules) {
+				dependentRule.ApplyAsyncCondition(predicate, applyConditionTo);
 			}
 		}
 
-		public void ApplySharedCondition(Func<IValidationContext, bool> condition) {
+		public void ApplySharedCondition(Func<ValidationContext<T>, bool> condition) {
 			if (_condition == null) {
 				_condition = condition;
 			}
@@ -436,7 +354,7 @@ namespace FluentValidation.Internal {
 			}
 		}
 
-		public void ApplySharedAsyncCondition(Func<IValidationContext, CancellationToken, Task<bool>> condition) {
+		public void ApplySharedAsyncCondition(Func<ValidationContext<T>, CancellationToken, Task<bool>> condition) {
 			if (_asyncCondition == null) {
 				_asyncCondition = condition;
 			}
@@ -444,7 +362,6 @@ namespace FluentValidation.Internal {
 				var original = _asyncCondition;
 				_asyncCondition = async (ctx, ct) => await condition(ctx, ct) && await original(ctx, ct);
 			}
-
 		}
 	}
 }

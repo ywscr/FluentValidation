@@ -22,7 +22,7 @@ namespace FluentValidation.Validators {
 	using System.Threading;
 	using System.Threading.Tasks;
 	using Resources;
-	using Results;
+	using Results;t
 
 	/// <summary>
 	/// A custom property validator.
@@ -50,7 +50,7 @@ namespace FluentValidation.Validators {
 		/// </summary>
 		/// <param name="context"></param>
 		/// <returns></returns>
-		bool ShouldValidateAsynchronously(ValidationContext<T> context);
+		bool ShouldValidateAsynchronously(IValidationContext context);
 
 		/// <summary>
 		/// Additional options for configuring the property validator.

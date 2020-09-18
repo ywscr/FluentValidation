@@ -24,10 +24,14 @@ namespace FluentValidation.Validators {
 	using Resources;
 	using Results;
 
-	public abstract class NoopPropertyValidator : IPropertyValidator {
-		public abstract IEnumerable<ValidationFailure> Validate(PropertyValidatorContext context);
+	[Obsolete("Use NoopPropertyValidator<T,TProperty> instead")]
+	public abstract class NoopPropertyValidator : NoopPropertyValidator<object, object> {
+	}
 
-		public virtual Task<IEnumerable<ValidationFailure>> ValidateAsync(PropertyValidatorContext context, CancellationToken cancellation) {
+	public abstract class NoopPropertyValidator<T, TProperty> : IPropertyValidator<T, TProperty> {
+		public abstract IEnumerable<ValidationFailure> Validate(PropertyValidatorContext<T, TProperty> context);
+
+		public virtual Task<IEnumerable<ValidationFailure>> ValidateAsync(PropertyValidatorContext<T, TProperty> context, CancellationToken cancellation) {
 			return Task.FromResult(Validate(context));
 		}
 
@@ -35,6 +39,6 @@ namespace FluentValidation.Validators {
 			return false;
 		}
 
-		public PropertyValidatorOptions Options { get; } = new PropertyValidatorOptions();
+		public PropertyValidatorOptions<T, TProperty> Options { get; } = new PropertyValidatorOptions<T,TProperty>();
 	}
 }

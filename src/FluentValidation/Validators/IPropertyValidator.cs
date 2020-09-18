@@ -54,9 +54,6 @@ namespace FluentValidation.Validators {
 		/// <returns></returns>
 		bool ShouldValidateAsynchronously(IValidationContext context);
 
-		/// <summary>
-		/// Additional options for configuring the property validator.
-		/// </summary>
 		PropertyValidatorOptions Options { get; }
 	}
 }

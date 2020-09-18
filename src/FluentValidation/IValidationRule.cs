@@ -37,14 +37,18 @@ namespace FluentValidation {
 		/// Name of the rule-set to which this rule belongs.
 		/// </summary>
 		string[] RuleSets { get; set; }
+	}
 
+		/// <summary>
+	/// Defines a rule associated with a property which can have multiple validators.
+	/// </summary>
+	public interface IValidationRule<T> : IValidationRule {
 		/// <summary>
 		/// Performs validation using a validation context and returns a collection of Validation Failures.
 		/// </summary>
 		/// <param name="context">Validation Context</param>
 		/// <returns>A collection of validation failures</returns>
-		[Obsolete("Non-generic Validate methods will be removed in FluentValidation 10. Use the generic version of IValidationRule instead.")]
-		IEnumerable<ValidationFailure> Validate(IValidationContext context);
+		IEnumerable<ValidationFailure> Validate(ValidationContext<T> context);
 
 		/// <summary>
 		/// Performs validation using a validation context and returns a collection of Validation Failures asynchronously.
@@ -52,33 +56,33 @@ namespace FluentValidation {
 		/// <param name="context">Validation Context</param>
 		/// <param name="cancellation">Cancellation token</param>
 		/// <returns>A collection of validation failures</returns>
-		[Obsolete("Non-generic Validate methods will be removed in FluentValidation 10. Use the generic version of IValidationRule instead.")]
-		Task<IEnumerable<ValidationFailure>> ValidateAsync(IValidationContext context, CancellationToken cancellation);
+		Task<IEnumerable<ValidationFailure>> ValidateAsync(ValidationContext<T> context, CancellationToken cancellation);
 
 		/// <summary>
 		/// Applies a condition to either all the validators in the rule, or the most recent validator in the rule chain.
 		/// </summary>
 		/// <param name="predicate">The condition to apply</param>
 		/// <param name="applyConditionTo">Indicates whether the condition should be applied to all validators in the rule, or only the current one</param>		[Obsolete("Non-generic Validate methods will be removed in FluentValidation 10. Use the generic version of IValidationRule instead.")]
-		void ApplyCondition(Func<PropertyValidatorContext, bool> predicate, ApplyConditionTo applyConditionTo = ApplyConditionTo.AllValidators);
+		void ApplyCondition(Func<ValidationContext<T>, bool> predicate, ApplyConditionTo applyConditionTo = ApplyConditionTo.AllValidators);
 
 		/// <summary>
 		/// Applies an asynchronous condition to either all the validators in the rule, or the most recent validator in the rule chain.
 		/// </summary>
 		/// <param name="predicate">The condition to apply</param>
 		/// <param name="applyConditionTo">Indicates whether the condition should be applied to all validators in the rule, or only the current one</param>
-		void ApplyAsyncCondition(Func<PropertyValidatorContext, CancellationToken, Task<bool>> predicate, ApplyConditionTo applyConditionTo = ApplyConditionTo.AllValidators);
+		void ApplyAsyncCondition(Func<ValidationContext<T>, CancellationToken, Task<bool>> predicate, ApplyConditionTo applyConditionTo = ApplyConditionTo.AllValidators);
 
 		/// <summary>
 		/// Applies a condition that wraps the entire rule.
 		/// </summary>
 		/// <param name="condition">The condition to apply.</param>
-		void ApplySharedCondition(Func<IValidationContext, bool> condition);
+		void ApplySharedCondition(Func<ValidationContext<T>, bool> condition);
 
 		/// <summary>
 		/// Applies an asynchronous condition that wraps the entire rule.
 		/// </summary>
 		/// <param name="condition">The condition to apply.</param>
-		void ApplySharedAsyncCondition(Func<IValidationContext, CancellationToken, Task<bool>> condition);
+		void ApplySharedAsyncCondition(Func<ValidationContext<T>, CancellationToken, Task<bool>> condition);
 	}
+
 }

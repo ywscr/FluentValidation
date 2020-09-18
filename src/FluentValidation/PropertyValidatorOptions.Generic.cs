@@ -30,9 +30,9 @@ namespace FluentValidation {
 	/// </summary>
 	public class PropertyValidatorOptions<T, TProperty> {
 		private string _errorMessageTemplate;
-		private Func<PropertyValidatorContext<T, TProperty>, string> _errorMessageTemplateFactory;
-		private Func<PropertyValidatorContext<T, TProperty>, bool> _condition;
-		private Func<PropertyValidatorContext<T, TProperty>, CancellationToken, Task<bool>> _asyncCondition;
+		private Func<PropertyValidatorContext<T,TProperty>, string> _errorMessageTemplateFactory;
+		private Func<ValidationContext<T>, bool> _condition;
+		private Func<ValidationContext<T>, CancellationToken, Task<bool>> _asyncCondition;
 
 		/// <summary>
 		/// Whether or not this validator has a condition associated with it.
@@ -48,7 +48,7 @@ namespace FluentValidation {
 		/// Adds a condition for this validator. If there's already a condition, they're combined together with an AND.
 		/// </summary>
 		/// <param name="condition"></param>
-		public void ApplyCondition(Func<PropertyValidatorContext<T, TProperty>, bool> condition) {
+		public void ApplyCondition(Func<ValidationContext<T>, bool> condition) {
 			if (_condition == null) {
 				_condition = condition;
 			}
@@ -62,7 +62,7 @@ namespace FluentValidation {
 		/// Adds a condition for this validator. If there's already a condition, they're combined together with an AND.
 		/// </summary>
 		/// <param name="condition"></param>
-		public void ApplyAsyncCondition(Func<PropertyValidatorContext<T, TProperty>, CancellationToken, Task<bool>> condition) {
+		public void ApplyAsyncCondition(Func<ValidationContext<T>, CancellationToken, Task<bool>> condition) {
 			if (_asyncCondition == null) {
 				_asyncCondition = condition;
 			}
@@ -72,7 +72,7 @@ namespace FluentValidation {
 			}
 		}
 
-		internal bool InvokeCondition(PropertyValidatorContext<T, TProperty> context) {
+		internal bool InvokeCondition(ValidationContext<T> context) {
 			if (_condition != null) {
 				return _condition(context);
 			}
@@ -80,7 +80,7 @@ namespace FluentValidation {
 			return true;
 		}
 
-		internal async Task<bool> InvokeAsyncCondition(PropertyValidatorContext<T, TProperty> context, CancellationToken token) {
+		internal async Task<bool> InvokeAsyncCondition(ValidationContext<T> context, CancellationToken token) {
 			if (_asyncCondition != null) {
 				return await _asyncCondition(context, token);
 			}
