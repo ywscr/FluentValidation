@@ -42,7 +42,7 @@ namespace FluentValidation {
 		/// <typeparam name="TProperty">Type of property being validated</typeparam>
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty> NotNull<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder) {
+		public static IRuleBuilderOptions<T, TProperty, NotNullValidator<T,TProperty>> NotNull<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder) {
 			return ruleBuilder.SetValidator(new NotNullValidator<T,TProperty>());
 		}
 
@@ -54,7 +54,7 @@ namespace FluentValidation {
 		/// <typeparam name="TProperty">Type of property being validated</typeparam>
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty> Null<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder) {
+		public static IRuleBuilderOptions<T, TProperty, NullValidator<T,TProperty>> Null<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder) {
 			return ruleBuilder.SetValidator(new NullValidator<T,TProperty>());
 		}
 
@@ -66,7 +66,7 @@ namespace FluentValidation {
 		/// <typeparam name="TProperty">Type of property being validated</typeparam>
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty> NotEmpty<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder) {
+		public static IRuleBuilderOptions<T, TProperty, NotEmptyValidator<T,TProperty>> NotEmpty<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder) {
 			return ruleBuilder.SetValidator(new NotEmptyValidator<T,TProperty>());
 		}
 
@@ -78,7 +78,7 @@ namespace FluentValidation {
 		/// <typeparam name="TProperty">Type of property being validated</typeparam>
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty> Empty<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder) {
+		public static IRuleBuilderOptions<T, TProperty, EmptyValidator<T,TProperty>> Empty<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder) {
 			return ruleBuilder.SetValidator(new EmptyValidator<T,TProperty>());
 		}
 
@@ -91,7 +91,7 @@ namespace FluentValidation {
 		/// <param name="min"></param>
 		/// <param name="max"></param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, string> Length<T>(this IRuleBuilder<T, string> ruleBuilder, int min, int max) {
+		public static IRuleBuilderOptions<T, string, LengthValidator<T>> Length<T>(this IRuleBuilder<T, string> ruleBuilder, int min, int max) {
 			return ruleBuilder.SetValidator(new LengthValidator<T>(min, max));
 		}
 
@@ -104,7 +104,7 @@ namespace FluentValidation {
 		/// <param name="min"></param>
 		/// <param name="max"></param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, string> Length<T>(this IRuleBuilder<T, string> ruleBuilder, Func<T, int> min, Func<T, int> max) {
+		public static IRuleBuilderOptions<T, string, LengthValidator<T>> Length<T>(this IRuleBuilder<T, string> ruleBuilder, Func<T, int> min, Func<T, int> max) {
 			return ruleBuilder.SetValidator(new LengthValidator<T>(min, max));
 		}
 
@@ -116,7 +116,7 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="exactLength"></param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, string> Length<T>(this IRuleBuilder<T, string> ruleBuilder, int exactLength) {
+		public static IRuleBuilderOptions<T, string, ExactLengthValidator<T>> Length<T>(this IRuleBuilder<T, string> ruleBuilder, int exactLength) {
 			return ruleBuilder.SetValidator(new ExactLengthValidator<T>(exactLength));
 		}
 
@@ -128,7 +128,7 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="exactLength"></param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, string> Length<T>(this IRuleBuilder<T, string> ruleBuilder, Func<T, int> exactLength) {
+		public static IRuleBuilderOptions<T, string, ExactLengthValidator<T>> Length<T>(this IRuleBuilder<T, string> ruleBuilder, Func<T, int> exactLength) {
 			return ruleBuilder.SetValidator(new ExactLengthValidator<T>(exactLength));
 		}
 
@@ -140,7 +140,7 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="expression">The regular expression to check the value against.</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, string> Matches<T>(this IRuleBuilder<T, string> ruleBuilder, string expression) {
+		public static IRuleBuilderOptions<T, string, RegularExpressionValidator<T>> Matches<T>(this IRuleBuilder<T, string> ruleBuilder, string expression) {
 			return ruleBuilder.SetValidator(new RegularExpressionValidator<T>(expression));
 		}
 
@@ -152,7 +152,7 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="maximumLength"></param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, string> MaximumLength<T>(this IRuleBuilder<T, string> ruleBuilder, int maximumLength) {
+		public static IRuleBuilderOptions<T, string, MaximumLengthValidator<T>> MaximumLength<T>(this IRuleBuilder<T, string> ruleBuilder, int maximumLength) {
 			return ruleBuilder.SetValidator(new MaximumLengthValidator<T>(maximumLength));
 		}
 
@@ -164,7 +164,7 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="minimumLength"></param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, string> MinimumLength<T>(this IRuleBuilder<T, string> ruleBuilder, int minimumLength) {
+		public static IRuleBuilderOptions<T, string, MinimumLengthValidator<T>> MinimumLength<T>(this IRuleBuilder<T, string> ruleBuilder, int minimumLength) {
 			return ruleBuilder.SetValidator(new MinimumLengthValidator<T>(minimumLength));
 		}
 
@@ -176,7 +176,7 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="expression">The regular expression to check the value against.</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, string> Matches<T>(this IRuleBuilder<T, string> ruleBuilder, Func<T, string> expression) {
+		public static IRuleBuilderOptions<T, string, RegularExpressionValidator<T>> Matches<T>(this IRuleBuilder<T, string> ruleBuilder, Func<T, string> expression) {
 			return ruleBuilder.SetValidator(new RegularExpressionValidator<T>(expression));
 		}
 
@@ -188,7 +188,7 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="regex">The regular expression to use</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, string> Matches<T>(this IRuleBuilder<T, string> ruleBuilder, Regex regex) {
+		public static IRuleBuilderOptions<T, string, RegularExpressionValidator<T>> Matches<T>(this IRuleBuilder<T, string> ruleBuilder, Regex regex) {
 			return ruleBuilder.SetValidator(new RegularExpressionValidator<T>(regex));
 		}
 
@@ -200,7 +200,7 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="regex">The regular expression to use</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, string> Matches<T>(this IRuleBuilder<T, string> ruleBuilder, Func<T, Regex> regex) {
+		public static IRuleBuilderOptions<T, string, RegularExpressionValidator<T>> Matches<T>(this IRuleBuilder<T, string> ruleBuilder, Func<T, Regex> regex) {
 			return ruleBuilder.SetValidator(new RegularExpressionValidator<T>(regex));
 		}
 
@@ -214,7 +214,7 @@ namespace FluentValidation {
 		/// <param name="expression">The regular expression to check the value against.</param>
 		/// <param name="options">Regex options</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, string> Matches<T>(this IRuleBuilder<T, string> ruleBuilder, string expression, RegexOptions options) {
+		public static IRuleBuilderOptions<T, string, RegularExpressionValidator<T>> Matches<T>(this IRuleBuilder<T, string> ruleBuilder, string expression, RegexOptions options) {
 			return ruleBuilder.SetValidator(new RegularExpressionValidator<T>(expression, options));
 		}
 
@@ -227,7 +227,7 @@ namespace FluentValidation {
 		/// <param name="expression">The regular expression to check the value against.</param>
 		/// <param name="options">Regex options</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, string> Matches<T>(this IRuleBuilder<T, string> ruleBuilder, Func<T, string> expression, RegexOptions options) {
+		public static IRuleBuilderOptions<T, string, RegularExpressionValidator<T>> Matches<T>(this IRuleBuilder<T, string> ruleBuilder, Func<T, string> expression, RegexOptions options) {
 			return ruleBuilder.SetValidator(new RegularExpressionValidator<T>(expression, options));
 		}
 
@@ -239,9 +239,11 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="mode">The mode to use for email validation. If set to <see cref="EmailValidationMode.Net4xRegex"/>, then a regular expression will be used. This is the same regex used by the EmailAddressAttribute in .NET 4.x. If set to <see cref="EmailValidationMode.AspNetCoreCompatible"/> then this uses the simplified ASP.NET Core logic for checking an email address, which just checks for the presence of an @ sign.</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, string> EmailAddress<T>(this IRuleBuilder<T, string> ruleBuilder, EmailValidationMode mode = EmailValidationMode.AspNetCoreCompatible) {
+		public static IRuleBuilderOptions<T, string, EmailValidatorBase<T>> EmailAddress<T>(this IRuleBuilder<T, string> ruleBuilder, EmailValidationMode mode = EmailValidationMode.AspNetCoreCompatible) {
 #pragma warning disable 618
-			var validator = mode == EmailValidationMode.AspNetCoreCompatible ? new AspNetCoreCompatibleEmailValidator<T>() : (PropertyValidator<T,string>)new EmailValidator<T>();
+			var validator = mode == EmailValidationMode.AspNetCoreCompatible
+				? new AspNetCoreCompatibleEmailValidator<T>()
+				: (EmailValidatorBase<T>)new EmailValidator<T>();
 #pragma warning restore 618
 			return ruleBuilder.SetValidator(validator);
 		}
@@ -257,7 +259,7 @@ namespace FluentValidation {
 		/// <param name="toCompare">The value to compare</param>
 		/// <param name="comparer">Equality comparer to use</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty> NotEqual<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder,
+		public static IRuleBuilderOptions<T, TProperty, NotEqualValidator<T,TProperty>> NotEqual<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder,
 																			   TProperty toCompare, IEqualityComparer comparer = null) where TProperty : IComparable, IComparable<TProperty> {
 			if (comparer == null && typeof(TProperty) == typeof(string)) {
 				comparer = StringComparer.Ordinal;
@@ -276,7 +278,7 @@ namespace FluentValidation {
 		/// <param name="expression">A lambda expression to provide the comparison value</param>
 		/// <param name="comparer">Equality Comparer to use</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty> NotEqual<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder,
+		public static IRuleBuilderOptions<T, TProperty, NotEqualValidator<T,TProperty>> NotEqual<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder,
 																			   Expression<Func<T, TProperty>> expression, IEqualityComparer comparer = null) where TProperty : IComparable, IComparable<TProperty> {
 			if (comparer == null && typeof(TProperty) == typeof(string)) {
 				comparer = StringComparer.Ordinal;
@@ -299,7 +301,7 @@ namespace FluentValidation {
 		/// <param name="toCompare">The value to compare</param>
 		/// <param name="comparer">Equality Comparer to use</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty> Equal<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, TProperty toCompare, IEqualityComparer comparer = null) where TProperty : IComparable {
+		public static IRuleBuilderOptions<T, TProperty, EqualValidator<T,TProperty>> Equal<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, TProperty toCompare, IEqualityComparer comparer = null) where TProperty : IComparable {
 			if (comparer == null && typeof(TProperty) == typeof(string)) {
 				comparer = StringComparer.Ordinal;
 			}
@@ -317,7 +319,7 @@ namespace FluentValidation {
 		/// <param name="expression">A lambda expression to provide the comparison value</param>
 		/// <param name="comparer">Equality comparer to use</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty> Equal<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, Expression<Func<T, TProperty>> expression, IEqualityComparer comparer = null) where TProperty : IComparable {
+		public static IRuleBuilderOptions<T, TProperty, EqualValidator<T,TProperty>> Equal<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, Expression<Func<T, TProperty>> expression, IEqualityComparer comparer = null) where TProperty : IComparable {
 			if (comparer == null && typeof(TProperty) == typeof(string)) {
 				comparer = StringComparer.Ordinal;
 			}
@@ -338,7 +340,7 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="predicate">A lambda expression specifying the predicate</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty> Must<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, Func<TProperty, bool> predicate) {
+		public static IRuleBuilderOptions<T, TProperty, PredicateValidator<T,TProperty>> Must<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, Func<TProperty, bool> predicate) {
 			predicate.Guard("Cannot pass a null predicate to Must.", nameof(predicate));
 			return ruleBuilder.Must((x, val) => predicate(val));
 		}
@@ -354,7 +356,7 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="predicate">A lambda expression specifying the predicate</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty> Must<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, Func<T, TProperty, bool> predicate) {
+		public static IRuleBuilderOptions<T, TProperty, PredicateValidator<T,TProperty>> Must<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, Func<T, TProperty, bool> predicate) {
 			predicate.Guard("Cannot pass a null predicate to Must.", nameof(predicate));
 			return ruleBuilder.Must((x, val, propertyValidatorContext) => predicate(x, val));
 		}
@@ -370,7 +372,7 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="predicate">A lambda expression specifying the predicate</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty> Must<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, Func<T, TProperty, PropertyValidatorContext<T,TProperty>, bool> predicate) {
+		public static IRuleBuilderOptions<T, TProperty, PredicateValidator<T,TProperty>> Must<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, Func<T, TProperty, PropertyValidatorContext<T,TProperty>, bool> predicate) {
 			predicate.Guard("Cannot pass a null predicate to Must.", nameof(predicate));
 			return ruleBuilder.SetValidator(new PredicateValidator<T,TProperty>((instance, property, propertyValidatorContext) => predicate(instance, property, propertyValidatorContext)));
 		}
@@ -385,7 +387,7 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="predicate">A lambda expression specifying the predicate</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty> MustAsync<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, Func<TProperty, CancellationToken, Task<bool>> predicate) {
+		public static IRuleBuilderOptions<T, TProperty, AsyncPredicateValidator<T,TProperty>> MustAsync<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, Func<TProperty, CancellationToken, Task<bool>> predicate) {
 			predicate.Guard("Cannot pass a null predicate to Must.", nameof(predicate));
 
 			return ruleBuilder.MustAsync((x, val, ctx, cancel) => predicate(val, cancel));
@@ -402,7 +404,7 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="predicate">A lambda expression specifying the predicate</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty> MustAsync<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, Func<T, TProperty, CancellationToken, Task<bool>> predicate) {
+		public static IRuleBuilderOptions<T, TProperty, AsyncPredicateValidator<T,TProperty>> MustAsync<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, Func<T, TProperty, CancellationToken, Task<bool>> predicate) {
 			predicate.Guard("Cannot pass a null predicate to Must.", nameof(predicate));
 			return ruleBuilder.MustAsync((x, val, propertyValidatorContext, cancel) => predicate(x, val, cancel));
 		}
@@ -418,7 +420,7 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="predicate">A lambda expression specifying the predicate</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty> MustAsync<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, Func<T, TProperty, PropertyValidatorContext<T,TProperty>, CancellationToken, Task<bool>> predicate) {
+		public static IRuleBuilderOptions<T, TProperty, AsyncPredicateValidator<T,TProperty>> MustAsync<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, Func<T, TProperty, PropertyValidatorContext<T,TProperty>, CancellationToken, Task<bool>> predicate) {
 			predicate.Guard("Cannot pass a null predicate to Must.", nameof(predicate));
 			return ruleBuilder.SetValidator(new AsyncPredicateValidator<T,TProperty>((instance, property, propertyValidatorContext, cancel) => predicate(instance, property, propertyValidatorContext, cancel)));
 		}
@@ -433,7 +435,7 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="valueToCompare">The value being compared</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty> LessThan<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder,
+		public static IRuleBuilderOptions<T, TProperty, LessThanValidator<T,TProperty>> LessThan<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder,
 																			   TProperty valueToCompare)
 			where TProperty : IComparable<TProperty>, IComparable {
 			return ruleBuilder.SetValidator(new LessThanValidator<T,TProperty>(valueToCompare));
@@ -449,7 +451,7 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="valueToCompare">The value being compared</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, Nullable<TProperty>> LessThan<T, TProperty>(this IRuleBuilder<T, Nullable<TProperty>> ruleBuilder,
+		public static IRuleBuilderOptions<T, TProperty?> LessThan<T, TProperty>(this IRuleBuilder<T, Nullable<TProperty>> ruleBuilder,
 																			   TProperty valueToCompare)
 			where TProperty : struct, IComparable<TProperty>, IComparable {
 			return ruleBuilder.SetValidator(new LessThanValidator<T,TProperty>(valueToCompare));
@@ -465,7 +467,7 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="valueToCompare">The value being compared</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty> LessThanOrEqualTo<T, TProperty>(
+		public static IRuleBuilderOptions<T, TProperty, LessThanOrEqualValidator<T,TProperty>> LessThanOrEqualTo<T, TProperty>(
 			this IRuleBuilder<T, TProperty> ruleBuilder, TProperty valueToCompare) where TProperty : IComparable<TProperty>, IComparable {
 			return ruleBuilder.SetValidator(new LessThanOrEqualValidator<T,TProperty>(valueToCompare));
 		}
@@ -480,7 +482,7 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="valueToCompare">The value being compared</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty?> LessThanOrEqualTo<T, TProperty>(
+		public static IRuleBuilderOptions<T, TProperty?, LessThanOrEqualValidator<T,TProperty>> LessThanOrEqualTo<T, TProperty>(
 			this IRuleBuilder<T, TProperty?> ruleBuilder, TProperty valueToCompare) where TProperty : struct, IComparable<TProperty>, IComparable {
 			return ruleBuilder.SetValidator(new LessThanOrEqualValidator<T,TProperty>(valueToCompare));
 		}
@@ -495,7 +497,7 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="valueToCompare">The value being compared</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty> GreaterThan<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, TProperty valueToCompare)
+		public static IRuleBuilderOptions<T, TProperty, GreaterThanValidator<T,TProperty>> GreaterThan<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, TProperty valueToCompare)
 			where TProperty : IComparable<TProperty>, IComparable {
 			return ruleBuilder.SetValidator(new GreaterThanValidator<T,TProperty>(valueToCompare));
 		}
@@ -510,7 +512,7 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="valueToCompare">The value being compared</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty?> GreaterThan<T, TProperty>(this IRuleBuilder<T, TProperty?> ruleBuilder, TProperty valueToCompare)
+		public static IRuleBuilderOptions<T, TProperty?, GreaterThanValidator<T,TProperty>> GreaterThan<T, TProperty>(this IRuleBuilder<T, TProperty?> ruleBuilder, TProperty valueToCompare)
 			where TProperty : struct, IComparable<TProperty>, IComparable {
 			return ruleBuilder.SetValidator(new GreaterThanValidator<T,TProperty>(valueToCompare));
 		}
@@ -525,7 +527,7 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="valueToCompare">The value being compared</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty> GreaterThanOrEqualTo<T, TProperty>(
+		public static IRuleBuilderOptions<T, TProperty, GreaterThanOrEqualValidator<T,TProperty>> GreaterThanOrEqualTo<T, TProperty>(
 			this IRuleBuilder<T, TProperty> ruleBuilder, TProperty valueToCompare) where TProperty : IComparable<TProperty>, IComparable {
 			return ruleBuilder.SetValidator(new GreaterThanOrEqualValidator<T,TProperty>(valueToCompare));
 		}
@@ -540,7 +542,7 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="valueToCompare">The value being compared</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty?> GreaterThanOrEqualTo<T, TProperty>(
+		public static IRuleBuilderOptions<T, TProperty?, GreaterThanOrEqualValidator<T,TProperty>> GreaterThanOrEqualTo<T, TProperty>(
 			this IRuleBuilder<T, TProperty?> ruleBuilder, TProperty valueToCompare) where TProperty : struct, IComparable<TProperty>, IComparable {
 			return ruleBuilder.SetValidator(new GreaterThanOrEqualValidator<T,TProperty>(valueToCompare));
 		}
@@ -556,7 +558,7 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="expression">A lambda that should return the value being compared</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty> LessThan<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder,
+		public static IRuleBuilderOptions<T, TProperty, LessThanValidator<T,TProperty>> LessThan<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder,
 																			   Expression<Func<T, TProperty>> expression)
 			where TProperty : IComparable<TProperty>, IComparable {
 			expression.Guard("Cannot pass null to LessThan", nameof(expression));
@@ -577,7 +579,7 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="expression">A lambda that should return the value being compared</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty> LessThan<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder,
+		public static IRuleBuilderOptions<T, TProperty, LessThanValidator<T,TProperty>> LessThan<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder,
 																			   Expression<Func<T, TProperty?>> expression)
 			where TProperty : struct, IComparable<TProperty>, IComparable {
 			expression.Guard("Cannot pass null to LessThan", nameof(expression));
@@ -599,7 +601,7 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="expression">A lambda that should return the value being compared</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, Nullable<TProperty>> LessThan<T, TProperty>(this IRuleBuilder<T, Nullable<TProperty>> ruleBuilder,
+		public static IRuleBuilderOptions<T, TProperty?, LessThanValidator<T,TProperty>> LessThan<T, TProperty>(this IRuleBuilder<T, Nullable<TProperty>> ruleBuilder,
 																						 Expression<Func<T, TProperty>> expression)
 			where TProperty : struct, IComparable<TProperty>, IComparable {
 			expression.Guard("Cannot pass null to LessThan", nameof(expression));
@@ -621,8 +623,8 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="expression">A lambda that should return the value being compared</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, Nullable<TProperty>> LessThan<T, TProperty>(this IRuleBuilder<T, Nullable<TProperty>> ruleBuilder,
-																						 Expression<Func<T, Nullable<TProperty>>> expression)
+		public static IRuleBuilderOptions<T, TProperty?, LessThanValidator<T,TProperty>> LessThan<T, TProperty>(this IRuleBuilder<T, Nullable<TProperty>> ruleBuilder,
+																						 Expression<Func<T, TProperty?>> expression)
 			where TProperty : struct, IComparable<TProperty>, IComparable {
 			expression.Guard("Cannot pass null to LessThan", nameof(expression));
 
@@ -643,7 +645,7 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="expression">The value being compared</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty> LessThanOrEqualTo<T, TProperty>(
+		public static IRuleBuilderOptions<T, TProperty, LessThanOrEqualValidator<T,TProperty>> LessThanOrEqualTo<T, TProperty>(
 			this IRuleBuilder<T, TProperty> ruleBuilder, Expression<Func<T, TProperty>> expression)
 			where TProperty : IComparable<TProperty>, IComparable {
 			var member = expression.GetMember();
@@ -663,8 +665,8 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="expression">The value being compared</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty> LessThanOrEqualTo<T, TProperty>(
-			this IRuleBuilder<T, TProperty> ruleBuilder, Expression<Func<T, Nullable<TProperty>>> expression)
+		public static IRuleBuilderOptions<T, TProperty, LessThanOrEqualValidator<T,TProperty>> LessThanOrEqualTo<T, TProperty>(
+			this IRuleBuilder<T, TProperty> ruleBuilder, Expression<Func<T, TProperty?>> expression)
 			where TProperty : struct, IComparable<TProperty>, IComparable {
 			var member = expression.GetMember();
 			var func = AccessorCache<T>.GetCachedAccessor(member, expression);
@@ -683,8 +685,8 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="expression">The value being compared</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, Nullable<TProperty>> LessThanOrEqualTo<T, TProperty>(
-			this IRuleBuilder<T, Nullable<TProperty>> ruleBuilder, Expression<Func<T, TProperty>> expression)
+		public static IRuleBuilderOptions<T, TProperty?, LessThanOrEqualValidator<T, TProperty>> LessThanOrEqualTo<T, TProperty>(
+			this IRuleBuilder<T, TProperty?> ruleBuilder, Expression<Func<T, TProperty>> expression)
 			where TProperty : struct, IComparable<TProperty>, IComparable {
 			var member = expression.GetMember();
 			var func = AccessorCache<T>.GetCachedAccessor(member, expression);
@@ -703,7 +705,7 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="expression">The value being compared</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty?> LessThanOrEqualTo<T, TProperty>(
+		public static IRuleBuilderOptions<T, TProperty?, LessThanOrEqualValidator<T,TProperty>> LessThanOrEqualTo<T, TProperty>(
 		  this IRuleBuilder<T, TProperty?> ruleBuilder, Expression<Func<T, TProperty?>> expression)
 		  where TProperty : struct, IComparable<TProperty>, IComparable {
 			var member = expression.GetMember();
@@ -723,7 +725,7 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="expression">The value being compared</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty> GreaterThan<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder,
+		public static IRuleBuilderOptions<T, TProperty, GreaterThanValidator<T,TProperty>> GreaterThan<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder,
 																				  Expression<Func<T, TProperty>> expression)
 			where TProperty : IComparable<TProperty>, IComparable {
 			var member = expression.GetMember();
@@ -743,8 +745,8 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="expression">The value being compared</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty> GreaterThan<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder,
-																				  Expression<Func<T, Nullable<TProperty>>> expression)
+		public static IRuleBuilderOptions<T, TProperty, GreaterThanValidator<T,TProperty>> GreaterThan<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder,
+																				  Expression<Func<T, TProperty?>> expression)
 			where TProperty : struct, IComparable<TProperty>, IComparable {
 			var member = expression.GetMember();
 			var func = AccessorCache<T>.GetCachedAccessor(member, expression);
@@ -763,7 +765,7 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="expression">The value being compared</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, Nullable<TProperty>> GreaterThan<T, TProperty>(this IRuleBuilder<T, Nullable<TProperty>> ruleBuilder,
+		public static IRuleBuilderOptions<T, TProperty?> GreaterThan<T, TProperty>(this IRuleBuilder<T, Nullable<TProperty>> ruleBuilder,
 																				  Expression<Func<T, TProperty>> expression)
 			where TProperty : struct, IComparable<TProperty>, IComparable {
 			var member = expression.GetMember();
@@ -783,8 +785,8 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="expression">The value being compared</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, Nullable<TProperty>> GreaterThan<T, TProperty>(this IRuleBuilder<T, Nullable<TProperty>> ruleBuilder,
-																				  Expression<Func<T, Nullable<TProperty>>> expression)
+		public static IRuleBuilderOptions<T, TProperty?, GreaterThanValidator<T,TProperty>> GreaterThan<T, TProperty>(this IRuleBuilder<T, Nullable<TProperty>> ruleBuilder,
+																				  Expression<Func<T, TProperty?>> expression)
 			where TProperty : struct, IComparable<TProperty>, IComparable {
 			var member = expression.GetMember();
 			var func = AccessorCache<T>.GetCachedAccessor(member, expression);
@@ -803,7 +805,7 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="valueToCompare">The value being compared</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty> GreaterThanOrEqualTo<T, TProperty>(
+		public static IRuleBuilderOptions<T, TProperty, GreaterThanOrEqualValidator<T,TProperty>> GreaterThanOrEqualTo<T, TProperty>(
 			this IRuleBuilder<T, TProperty> ruleBuilder, Expression<Func<T, TProperty>> valueToCompare)
 			where TProperty : IComparable<TProperty>, IComparable {
 			var member = valueToCompare.GetMember();
@@ -823,8 +825,8 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="valueToCompare">The value being compared</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty> GreaterThanOrEqualTo<T, TProperty>(
-			this IRuleBuilder<T, TProperty> ruleBuilder, Expression<Func<T, Nullable<TProperty>>> valueToCompare)
+		public static IRuleBuilderOptions<T, TProperty, GreaterThanOrEqualValidator<T,TProperty>> GreaterThanOrEqualTo<T, TProperty>(
+			this IRuleBuilder<T, TProperty> ruleBuilder, Expression<Func<T, TProperty?>> valueToCompare)
 			where TProperty : struct, IComparable<TProperty>, IComparable {
 			var member = valueToCompare.GetMember();
 			var func = AccessorCache<T>.GetCachedAccessor(member, valueToCompare);
@@ -843,7 +845,7 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="valueToCompare">The value being compared</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty?> GreaterThanOrEqualTo<T, TProperty>(this IRuleBuilder<T, TProperty?> ruleBuilder, Expression<Func<T, TProperty?>> valueToCompare)
+		public static IRuleBuilderOptions<T, TProperty?, GreaterThanOrEqualValidator<T,TProperty>> GreaterThanOrEqualTo<T, TProperty>(this IRuleBuilder<T, TProperty?> ruleBuilder, Expression<Func<T, TProperty?>> valueToCompare)
 		  where TProperty : struct, IComparable<TProperty>, IComparable {
 			var member = valueToCompare.GetMember();
 			var func = AccessorCache<T>.GetCachedAccessor(member, valueToCompare);
@@ -862,7 +864,7 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <param name="valueToCompare">The value being compared</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty?> GreaterThanOrEqualTo<T, TProperty>(
+		public static IRuleBuilderOptions<T, TProperty?, GreaterThanOrEqualValidator<T,TProperty>> GreaterThanOrEqualTo<T, TProperty>(
 		  this IRuleBuilder<T, TProperty?> ruleBuilder, Expression<Func<T, TProperty>> valueToCompare)
 		  where TProperty : struct, IComparable<TProperty>, IComparable {
 			var member = valueToCompare.GetMember();
@@ -882,7 +884,8 @@ namespace FluentValidation {
 		/// <param name="from">The lowest allowed value</param>
 		/// <param name="to">The highest allowed value</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty> InclusiveBetween<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, TProperty from, TProperty to) where TProperty : IComparable<TProperty>, IComparable {
+		public static IRuleBuilderOptions<T, TProperty, InclusiveBetweenValidator<T,TProperty>> InclusiveBetween<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, TProperty from, TProperty to)
+			where TProperty : IComparable<TProperty>, IComparable {
 			return ruleBuilder.SetValidator(new InclusiveBetweenValidator<T,TProperty>(from, to));
 		}
 
@@ -896,7 +899,8 @@ namespace FluentValidation {
 		/// <param name="from">The lowest allowed value</param>
 		/// <param name="to">The highest allowed value</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, Nullable<TProperty>> InclusiveBetween<T, TProperty>(this IRuleBuilder<T, Nullable<TProperty>> ruleBuilder, TProperty from, TProperty to) where TProperty : struct, IComparable<TProperty>, IComparable {
+		public static IRuleBuilderOptions<T, TProperty?, InclusiveBetweenValidator<T,TProperty>> InclusiveBetween<T, TProperty>(this IRuleBuilder<T, TProperty?> ruleBuilder, TProperty from, TProperty to)
+			where TProperty : struct, IComparable<TProperty>, IComparable {
 			return ruleBuilder.SetValidator(new InclusiveBetweenValidator<T,TProperty>(from, to));
 		}
 
@@ -910,7 +914,8 @@ namespace FluentValidation {
 		/// <param name="from">The lowest allowed value</param>
 		/// <param name="to">The highest allowed value</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty> ExclusiveBetween<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, TProperty from, TProperty to) where TProperty : IComparable<TProperty>, IComparable {
+		public static IRuleBuilderOptions<T, TProperty, ExclusiveBetweenValidator<T,TProperty>> ExclusiveBetween<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, TProperty from, TProperty to)
+			where TProperty : IComparable<TProperty>, IComparable {
 			return ruleBuilder.SetValidator(new ExclusiveBetweenValidator<T,TProperty>(from, to));
 		}
 
@@ -924,14 +929,15 @@ namespace FluentValidation {
 		/// <param name="from">The lowest allowed value</param>
 		/// <param name="to">The highest allowed value</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, Nullable<TProperty>> ExclusiveBetween<T, TProperty>(this IRuleBuilder<T, Nullable<TProperty>> ruleBuilder, TProperty from, TProperty to) where TProperty : struct, IComparable<TProperty>, IComparable {
+		public static IRuleBuilderOptions<T, TProperty?, ExclusiveBetweenValidator<T,TProperty>> ExclusiveBetween<T, TProperty>(this IRuleBuilder<T, TProperty?> ruleBuilder, TProperty from, TProperty to)
+			where TProperty : struct, IComparable<TProperty>, IComparable {
 			return ruleBuilder.SetValidator(new ExclusiveBetweenValidator<T,TProperty>(from, to));
 		}
 
 		/// <summary>
 		/// Defines a credit card validator for the current rule builder that ensures that the specified string is a valid credit card number.
 		/// </summary>
-		public static IRuleBuilderOptions<T, string> CreditCard<T>(this IRuleBuilder<T, string> ruleBuilder) {
+		public static IRuleBuilderOptions<T, string, CreditCardValidator<T>> CreditCard<T>(this IRuleBuilder<T, string> ruleBuilder) {
 			return ruleBuilder.SetValidator(new CreditCardValidator<T>());
 		}
 
@@ -942,7 +948,7 @@ namespace FluentValidation {
 		/// <typeparam name="TProperty">Type of property being validated</typeparam>
 		/// <param name="ruleBuilder">The rule builder on which the validator should be defined</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty> IsInEnum<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder) {
+		public static IRuleBuilderOptions<T, TProperty, EnumValidator<T,TProperty>> IsInEnum<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder) {
 			return ruleBuilder.SetValidator(new EnumValidator<T, TProperty>());
 		}
 
@@ -956,7 +962,7 @@ namespace FluentValidation {
 		/// <param name="precision">Allowed precision of the value</param>
 		/// <param name="ignoreTrailingZeros">Whether the validator will ignore trailing zeros.</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty> ScalePrecision<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, int scale, int precision, bool ignoreTrailingZeros = false) {
+		public static IRuleBuilderOptions<T, TProperty, ScalePrecisionValidator<T>> ScalePrecision<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, int scale, int precision, bool ignoreTrailingZeros = false) {
 			return ruleBuilder.SetValidator(new ScalePrecisionValidator<T>(scale, precision) { IgnoreTrailingZeros = ignoreTrailingZeros });
 		}
 
@@ -980,8 +986,8 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder"></param>
 		/// <param name="action"></param>
 		/// <returns></returns>
-		public static IRuleBuilderInitial<T, TProperty> CustomAsync<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, Func<TProperty, CustomContext, CancellationToken, Task> action) {
-			return (IRuleBuilderInitial<T, TProperty>) ruleBuilder.SetValidator(new CustomValidator<TProperty>(action));
+		public static IRuleBuilderInitial<T, TProperty> CustomAsync<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, Func<TProperty, CustomContext<T,TProperty>, CancellationToken, Task> action) {
+			return (IRuleBuilderInitial<T, TProperty>) ruleBuilder.SetValidator(new CustomValidator<T, TProperty>(action));
 		}
 
 		/// <summary>
@@ -992,11 +998,12 @@ namespace FluentValidation {
 		/// <typeparam name="T"></typeparam>
 		/// <typeparam name="TElement"></typeparam>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, IEnumerable<TElement>> ForEach<T, TElement>(this IRuleBuilder<T, IEnumerable<TElement>> ruleBuilder,
+		public static IRuleBuilderOptions<T, IEnumerable<TElement>, ChildValidatorAdaptor<T,IEnumerable<TElement>>> ForEach<T, TElement>(this IRuleBuilder<T, IEnumerable<TElement>> ruleBuilder,
 			Action<IRuleBuilderInitialCollection<IEnumerable<TElement>, TElement>> action) {
 			var innerValidator = new InlineValidator<IEnumerable<TElement>>();
 			action(innerValidator.RuleForEach(x => x));
-			return ruleBuilder.SetValidator(innerValidator);
+			var adaptor = new ChildValidatorAdaptor<T, IEnumerable<TElement>>(innerValidator, typeof(InlineValidator<IEnumerable<TElement>>));
+			return ruleBuilder.SetValidator(adaptor);
 		}
 
 		/// <summary>
@@ -1007,7 +1014,7 @@ namespace FluentValidation {
 		/// <param name="enumType">The enum whose the string should match any name</param>
 		/// <param name="caseSensitive">If the comparison between the string and the enum names should be case sensitive</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, string> IsEnumName<T>(this IRuleBuilder<T, string> ruleBuilder, Type enumType, bool caseSensitive = true) {
+		public static IRuleBuilderOptions<T, string, StringEnumValidator<T>> IsEnumName<T>(this IRuleBuilder<T, string> ruleBuilder, Type enumType, bool caseSensitive = true) {
 			return ruleBuilder.SetValidator(new StringEnumValidator<T>(enumType, caseSensitive));
 		}
 
@@ -1020,11 +1027,12 @@ namespace FluentValidation {
 		/// <typeparam name="TProperty"></typeparam>
 		/// <returns></returns>
 		/// <exception cref="ArgumentNullException"></exception>
-		public static IRuleBuilderOptions<T, TProperty> ChildRules<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, Action<InlineValidator<TProperty>> action) {
+		public static IRuleBuilderOptions<T, TProperty, ChildValidatorAdaptor<T, TProperty>> ChildRules<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, Action<InlineValidator<TProperty>> action) {
 			if (action == null) throw new ArgumentNullException(nameof(action));
 			var validator = new InlineValidator<TProperty>();
 			action(validator);
-			return ruleBuilder.SetValidator(validator);
+			var adaptor = new ChildValidatorAdaptor<T, TProperty>(validator, validator.GetType());
+			return ruleBuilder.SetValidator(adaptor);
 		}
 
 		/// <summary>
@@ -1035,7 +1043,7 @@ namespace FluentValidation {
 		/// <param name="ruleBuilder"></param>
 		/// <param name="validatorConfiguration">Callback for setting up the inheritance validators.</param>
 		/// <returns></returns>
-		public static IRuleBuilderOptions<T, TProperty> SetInheritanceValidator<T,TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, Action<PolymorphicValidator<T, TProperty>> validatorConfiguration) {
+		public static IRuleBuilderOptions<T, TProperty, PolymorphicValidator<T,TProperty>> SetInheritanceValidator<T,TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, Action<PolymorphicValidator<T, TProperty>> validatorConfiguration) {
 			if (validatorConfiguration == null) throw new ArgumentNullException(nameof(validatorConfiguration));
 			var validator = new PolymorphicValidator<T, TProperty>();
 			validatorConfiguration(validator);

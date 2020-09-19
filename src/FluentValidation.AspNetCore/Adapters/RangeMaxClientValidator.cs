@@ -7,11 +7,9 @@ namespace FluentValidation.AspNetCore {
 	using Validators;
 
 	internal class RangeMaxClientValidator : ClientValidatorBase {
-		LessThanOrEqualValidator RangeValidator {
-			get { return (LessThanOrEqualValidator)Validator; }
-		}
+		ILessThanOrEqualValidator RangeValidator => (ILessThanOrEqualValidator)Validator;
 
-		public RangeMaxClientValidator(PropertyRule rule, IPropertyValidator validator) : base(rule, validator) {
+		public RangeMaxClientValidator(IValidationRule rule, IPropertyValidator validator) : base(rule, validator) {
 
 		}
 
@@ -36,13 +34,13 @@ namespace FluentValidation.AspNetCore {
 			string message;
 
 			try {
-				message = RangeValidator.Options.GetErrorMessageTemplate(null);
+				message = RangeValidator.GetErrorMessageTemplate(null);
 			}
 			catch (FluentValidationMessageFormatException) {
-				message = cfg.LanguageManager.GetStringForValidator<LessThanOrEqualValidator>();
+				message = cfg.LanguageManager.GetString("LessThanOrEqualValidator");
 			}
 			catch (NullReferenceException) {
-				message = cfg.LanguageManager.GetStringForValidator<LessThanOrEqualValidator>();
+				message = cfg.LanguageManager.GetString("LessThanOrEqualValidator");
 			}
 
 			message = formatter.BuildMessage(message);

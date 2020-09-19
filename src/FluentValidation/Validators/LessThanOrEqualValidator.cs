@@ -21,7 +21,7 @@ namespace FluentValidation.Validators {
 	using System.Reflection;
 	using Resources;
 
-	public class LessThanOrEqualValidator<T,TProperty> : AbstractComparisonValidator<T,TProperty> where TProperty : IComparable<TProperty>, IComparable {
+	public class LessThanOrEqualValidator<T,TProperty> : AbstractComparisonValidator<T,TProperty>, ILessThanOrEqualValidator where TProperty : IComparable<TProperty>, IComparable {
 		public LessThanOrEqualValidator(TProperty value) : base(value) {
 		}
 
@@ -41,5 +41,10 @@ namespace FluentValidation.Validators {
 		}
 
 		public override Comparison Comparison => Comparison.LessThanOrEqual;
+		object ILessThanOrEqualValidator.ValueToCompare => ValueToCompare;
+	}
+
+	public interface ILessThanOrEqualValidator : IPropertyValidator {
+		object ValueToCompare { get; }
 	}
 }

@@ -25,7 +25,7 @@ namespace FluentValidation.AspNetCore
 	using Validators;
 
 	internal class CreditCardClientValidator : ClientValidatorBase {
-		public CreditCardClientValidator(PropertyRule rule, IPropertyValidator validator) : base(rule, validator) {
+		public CreditCardClientValidator(IValidationRule rule, IPropertyValidator validator) : base(rule, validator) {
 		}
 
 		public override void AddValidation(ClientModelValidationContext context) {
@@ -33,13 +33,13 @@ namespace FluentValidation.AspNetCore
 			var formatter = cfg.MessageFormatterFactory().AppendPropertyName(Rule.GetDisplayName(null));
 			string message;
 			try {
-				message = Validator.Options.GetErrorMessageTemplate(null);
+				message = Validator.GetErrorMessageTemplate(null);
 			}
 			catch (FluentValidationMessageFormatException) {
-				message = cfg.LanguageManager.GetStringForValidator<CreditCardValidator>();
+				message = cfg.LanguageManager.GetString("CreditCardValidator");
 			}
 			catch (NullReferenceException) {
-				message = cfg.LanguageManager.GetStringForValidator<CreditCardValidator>();
+				message = cfg.LanguageManager.GetString("CreditCardValidator");
 			}
 			message = formatter.BuildMessage(message);
 			MergeAttribute(context.Attributes, "data-val", "true");

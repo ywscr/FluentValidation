@@ -1,3 +1,4 @@
+/*
 #region License
 // Copyright (c) .NET Foundation and contributors.
 //
@@ -195,3 +196,4 @@ namespace FluentValidation {
 		}
 	}
 }
+*/

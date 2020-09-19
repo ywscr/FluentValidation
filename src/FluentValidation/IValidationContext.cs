@@ -3,27 +3,14 @@ namespace FluentValidation {
 	using System.Collections.Generic;
 	using Internal;
 
-	/// <summary>
-	/// Defines a validation context.
-	/// </summary>
-	public interface ICommonContext {
-		/// <summary>
-		/// The object currently being validated.
-		/// </summary>
-		object InstanceToValidate { get; }
+	// /// <summary>
+	// /// Defines a validation context.
+	// /// </summary>
+	// public interface ICommonContext {
+	//
+	// }
 
-		/// <summary>
-		/// The value of the property being validated.
-		/// </summary>
-		object PropertyValue { get; }
-
-		/// <summary>
-		/// Parent validation context.
-		/// </summary>
-		ICommonContext ParentContext { get; }
-	}
-
-	public interface IValidationContext : ICommonContext {
+	public interface IValidationContext {
 		/// <summary>
 		/// Additional data associated with the validation request.
 		/// </summary>
@@ -48,6 +35,16 @@ namespace FluentValidation {
 		/// Whether this is a child collection context.
 		/// </summary>
 		bool IsChildCollectionContext { get; }
+
+		/// <summary>
+		/// The object currently being validated.
+		/// </summary>
+		object InstanceToValidate { get; }
+
+		/// <summary>
+		/// Parent context.
+		/// </summary>
+		IValidationContext ParentContext { get; }
 	}
 
 	/// <summary>
@@ -55,7 +52,7 @@ namespace FluentValidation {
 	/// </summary>
 	/// <typeparam name="T"></typeparam>
 	public class ValidationContext<T> : IValidationContext {
-		private ICommonContext _parentContext;
+		private IValidationContext _parentContext;
 
 		/// <summary>
 		/// Creates a new validation context
@@ -106,7 +103,10 @@ namespace FluentValidation {
 		/// <summary>
 		/// Object being validated
 		/// </summary>
-		object ICommonContext.InstanceToValidate => InstanceToValidate;
+		object IValidationContext.InstanceToValidate => InstanceToValidate;
+		
+		IValidationContext IValidationContext.ParentContext => _parentContext;
+
 
 		/// <summary>
 		/// Selector
@@ -122,13 +122,6 @@ namespace FluentValidation {
 		/// Whether this is a child collection context.
 		/// </summary>
 		public virtual bool IsChildCollectionContext { get; internal set; }
-
-		// root level context doesn't know about properties.
-		object ICommonContext.PropertyValue => null;
-
-		// This is the root context so it doesn't have a parent.
-		// Explicit implementation so it's not exposed necessarily.
-		ICommonContext ICommonContext.ParentContext => _parentContext;
 
 		/// <summary>
 		/// Whether the root validator should throw an exception when validation fails.

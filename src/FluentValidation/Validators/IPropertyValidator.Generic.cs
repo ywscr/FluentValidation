@@ -29,7 +29,7 @@ namespace FluentValidation.Validators {
 	/// This interface should not be implemented directly in your code as it is subject to change.
 	/// Please inherit from PropertyValidator instead.
 	/// </summary>
-	public interface IPropertyValidator<T,TProperty> : IPropertyValidator {
+	public interface IPropertyValidator<T,in TProperty> : IPropertyValidator {
 		/// <summary>
 		/// Performs validation
 		/// </summary>

@@ -78,7 +78,7 @@ namespace FluentValidation.Internal {
 		/// Sets the display name for the property using a function.
 		/// </summary>
 		/// <param name="factory">The function for building the display name</param>
-		public void SetDisplayName(Func<IValidationContext, string> factory) {
+		public void SetDisplayName(Func<ValidationContext<T>, string> factory) {
 			_displayNameFactory = factory;
 			_displayName = null;
 		}

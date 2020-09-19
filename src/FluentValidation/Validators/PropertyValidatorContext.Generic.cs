@@ -20,7 +20,24 @@ namespace FluentValidation.Validators {
 	using System;
 	using Internal;
 
-	public class PropertyValidatorContext<T,TProperty> : ICommonContext {
+	public interface IPropertyValidatorContext {
+		/// <summary>
+		/// The object currently being validated.
+		/// </summary>
+		object InstanceToValidate { get; }
+
+		/// <summary>
+		/// The value of the property being validated.
+		/// </summary>
+		object PropertyValue { get; }
+
+		/// <summary>
+		/// Parent validation context.
+		/// </summary>
+		IValidationContext ParentContext { get; }
+	}
+
+	public class PropertyValidatorContext<T,TProperty> : IPropertyValidatorContext {
 		private MessageFormatter _messageFormatter;
 		private TProperty _propertyValue;
 		private Lazy<TProperty> _propertyValueAccessor;
@@ -50,9 +67,9 @@ namespace FluentValidation.Validators {
 		}
 
 		// Explicit implementation so we don't have to expose the base interface.
-		ICommonContext ICommonContext.ParentContext => ParentContext;
-		object ICommonContext.PropertyValue => PropertyValue;
-		object ICommonContext.InstanceToValidate => InstanceToValidate;
+		IValidationContext IPropertyValidatorContext.ParentContext => ParentContext;
+		object IPropertyValidatorContext.PropertyValue => PropertyValue;
+		object IPropertyValidatorContext.InstanceToValidate => InstanceToValidate;
 
 		public PropertyValidatorContext(ValidationContext<T> parentContext, PropertyRule<T> rule, string propertyName, TProperty propertyValue) {
 			ParentContext = parentContext;

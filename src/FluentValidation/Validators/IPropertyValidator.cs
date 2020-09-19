@@ -30,6 +30,10 @@ namespace FluentValidation.Validators {
 	/// Please inherit from <see cref="PropertyValidator">PropertyValidator</see> instead.
 	/// </summary>
 	public interface IPropertyValidator {
+		bool HasCondition { get; }
+		bool HasAsyncCondition { get; }
+
+		string GetErrorMessageTemplate(IPropertyValidatorContext context);
 		// /// <summary>
 		// /// Performs validation
 		// /// </summary>

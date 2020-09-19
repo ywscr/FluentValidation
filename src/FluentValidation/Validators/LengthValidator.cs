@@ -71,7 +71,7 @@ namespace FluentValidation.Validators {
 		}
 	}
 
-	public class ExactLengthValidator<T> : LengthValidator<T> {
+	public class ExactLengthValidator<T> : LengthValidator<T>, IExactLengthValidator {
 		public ExactLengthValidator(int length) : base(length,length) {
 
 		}
@@ -86,7 +86,7 @@ namespace FluentValidation.Validators {
 		}
 	}
 
-	public class MaximumLengthValidator<T> : LengthValidator<T> {
+	public class MaximumLengthValidator<T> : LengthValidator<T>, IMaximumLengthValidator {
 		public MaximumLengthValidator(int max)
 			: base(0, max) {
 
@@ -102,7 +102,7 @@ namespace FluentValidation.Validators {
 		}
 	}
 
-	public class MinimumLengthValidator<T> : LengthValidator<T> {
+	public class MinimumLengthValidator<T> : LengthValidator<T>, IMinimumLengthValidator {
 
 		public MinimumLengthValidator(int min)
 			: base(min, -1) {
@@ -123,4 +123,8 @@ namespace FluentValidation.Validators {
 		int Min { get; }
 		int Max { get; }
 	}
+
+	public interface IExactLengthValidator : ILengthValidator { }
+	public interface IMaximumLengthValidator : ILengthValidator { }
+	public interface IMinimumLengthValidator : ILengthValidator { }
 }

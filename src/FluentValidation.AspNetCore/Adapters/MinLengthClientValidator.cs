@@ -27,14 +27,14 @@ namespace FluentValidation.AspNetCore {
 
 	internal class MinLengthClientValidator : ClientValidatorBase {
 		public override void AddValidation(ClientModelValidationContext context) {
-			var lengthVal = (MinimumLengthValidator) Validator;
+			var lengthVal = (IMinimumLengthValidator) Validator;
 
 			MergeAttribute(context.Attributes, "data-val", "true");
 			MergeAttribute(context.Attributes, "data-val-minlength", GetErrorMessage(lengthVal, context));
 			MergeAttribute(context.Attributes, "data-val-minlength-min", lengthVal.Min.ToString());
 		}
 
-		private string GetErrorMessage(LengthValidator lengthVal, ClientModelValidationContext context) {
+		private string GetErrorMessage(IMinimumLengthValidator lengthVal, ClientModelValidationContext context) {
 			var cfg = context.ActionContext.HttpContext.RequestServices.GetValidatorConfiguration();
 
 			var formatter = cfg.MessageFormatterFactory()
@@ -44,7 +44,7 @@ namespace FluentValidation.AspNetCore {
 
 			string message;
 			try {
-				message = lengthVal.Options.GetErrorMessageTemplate(null);
+				message = lengthVal.GetErrorMessageTemplate(null);
 			}
 			catch (FluentValidationMessageFormatException) {
 				message = cfg.LanguageManager.GetString("MinimumLength_Simple");
@@ -61,7 +61,7 @@ namespace FluentValidation.AspNetCore {
 			return message;
 		}
 
-		public MinLengthClientValidator(PropertyRule rule, IPropertyValidator validator) : base(rule, validator) {
+		public MinLengthClientValidator(IValidationRule rule, IPropertyValidator validator) : base(rule, validator) {
 		}
 	}
 }

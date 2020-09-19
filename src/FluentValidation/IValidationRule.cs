@@ -37,6 +37,26 @@ namespace FluentValidation {
 		/// Name of the rule-set to which this rule belongs.
 		/// </summary>
 		string[] RuleSets { get; set; }
+
+		/// <summary>
+		/// Whether the rule has a condition.
+		/// </summary>
+		bool HasCondition { get; }
+
+		/// <summary>
+		/// Whether the rule has an async condition.
+		/// </summary>
+		bool HasAsyncCondition { get; }
+
+		/// <summary>
+		/// Type being validated.
+		/// </summary>
+		Type TypeToValidate { get; }
+
+		/// <summary>
+		/// Gets the display name for hte property.
+		/// </summary>
+		string GetDisplayName(IValidationContext context);
 	}
 
 		/// <summary>
