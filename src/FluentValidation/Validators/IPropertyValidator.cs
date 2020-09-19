@@ -30,30 +30,30 @@ namespace FluentValidation.Validators {
 	/// Please inherit from <see cref="PropertyValidator">PropertyValidator</see> instead.
 	/// </summary>
 	public interface IPropertyValidator {
-		/// <summary>
-		/// Performs validation
-		/// </summary>
-		/// <param name="context"></param>
-		/// <returns></returns>
-		[Obsolete("Non-generic Validate overloads will be removed from FluentValidation 10. Use IPropertyValidator<T,TProperty> instead.")]
-		IEnumerable<ValidationFailure> Validate(PropertyValidatorContext context);
+		// /// <summary>
+		// /// Performs validation
+		// /// </summary>
+		// /// <param name="context"></param>
+		// /// <returns></returns>
+		// [Obsolete("Non-generic Validate overloads will be removed from FluentValidation 10. Use IPropertyValidator<T,TProperty> instead.")]
+		// IEnumerable<ValidationFailure> Validate(PropertyValidatorContext context);
 
-		/// <summary>
-		/// Performs validation asynchronously.
-		/// </summary>
-		/// <param name="context"></param>
-		/// <param name="cancellation"></param>
-		/// <returns></returns>
-		[Obsolete("Non-generic Validate overloads will be removed from FluentValidation 10. Use IPropertyValidator<T,TProperty> instead.")]
-		Task<IEnumerable<ValidationFailure>> ValidateAsync(PropertyValidatorContext context, CancellationToken cancellation);
+		// /// <summary>
+		// /// Performs validation asynchronously.
+		// /// </summary>
+		// /// <param name="context"></param>
+		// /// <param name="cancellation"></param>
+		// /// <returns></returns>
+		// [Obsolete("Non-generic Validate overloads will be removed from FluentValidation 10. Use IPropertyValidator<T,TProperty> instead.")]
+		// Task<IEnumerable<ValidationFailure>> ValidateAsync(PropertyValidatorContext context, CancellationToken cancellation);
 
 		/// <summary>
 		/// Determines whether this validator should be run asynchronously or not.
 		/// </summary>
 		/// <param name="context"></param>
 		/// <returns></returns>
-		bool ShouldValidateAsynchronously(IValidationContext context);
+		// bool ShouldValidateAsynchronously(IValidationContext context);
 
-		PropertyValidatorOptions Options { get; }
+		// PropertyValidatorOptions Options { get; }
 	}
 }

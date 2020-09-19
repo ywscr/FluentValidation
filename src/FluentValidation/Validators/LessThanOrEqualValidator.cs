@@ -21,15 +21,15 @@ namespace FluentValidation.Validators {
 	using System.Reflection;
 	using Resources;
 
-	public class LessThanOrEqualValidator : AbstractComparisonValidator {
-		public LessThanOrEqualValidator(IComparable value) : base(value) {
+	public class LessThanOrEqualValidator<T,TProperty> : AbstractComparisonValidator<T,TProperty> where TProperty : IComparable<TProperty>, IComparable {
+		public LessThanOrEqualValidator(TProperty value) : base(value) {
 		}
 
-		public LessThanOrEqualValidator(Func<object, object> valueToCompareFunc, MemberInfo member, string memberDisplayName)
+		public LessThanOrEqualValidator(Func<T, TProperty> valueToCompareFunc, MemberInfo member, string memberDisplayName)
 			: base(valueToCompareFunc, member, memberDisplayName) {
 		}
 
-		public override bool IsValid(IComparable value, IComparable valueToCompare) {
+		public override bool IsValid(TProperty value, TProperty valueToCompare) {
 			if (valueToCompare == null)
 				return false;
 
@@ -37,7 +37,7 @@ namespace FluentValidation.Validators {
 		}
 
 		protected override string GetDefaultMessageTemplate() {
-			return Localized(nameof(LessThanOrEqualValidator));
+			return Localized("LessThanOrEqualValidator");
 		}
 
 		public override Comparison Comparison => Comparison.LessThanOrEqual;

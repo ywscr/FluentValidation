@@ -23,7 +23,7 @@ namespace FluentValidation.Validators {
 	using FluentValidation.Internal;
 	using Resources;
 
-	public class StringEnumValidator : PropertyValidator {
+	public class StringEnumValidator<T> : PropertyValidator<T, string> {
 		private readonly Type _enumType;
 
 		private readonly bool _caseSensitive;
@@ -37,10 +37,10 @@ namespace FluentValidation.Validators {
 			_caseSensitive = caseSensitive;
 		}
 
-		protected override bool IsValid(PropertyValidatorContext context) {
+		protected override bool IsValid(PropertyValidatorContext<T,string> context) {
 			if (context.PropertyValue == null) return true;
 
-			string value = context.PropertyValue.ToString();
+			string value = context.PropertyValue;
 			var comparison = _caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
 
 			return Enum.GetNames(_enumType).Any(n => n.Equals(value, comparison));
@@ -55,7 +55,7 @@ namespace FluentValidation.Validators {
 
 		protected override string GetDefaultMessageTemplate() {
 			// Intentionally the same message as EnumValidator.
-			return Localized(nameof(EnumValidator));
+			return Localized("EnumValidator");
 		}
 	}
 }

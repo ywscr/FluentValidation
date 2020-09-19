@@ -28,6 +28,7 @@ namespace FluentValidation.Internal {
 	using Results;
 	using Validators;
 
+	/*
 	/// <summary>
 	/// Defines a rule associated with a property.
 	/// </summary>
@@ -522,4 +523,5 @@ namespace FluentValidation.Internal {
 
 		#endregion
 	}
+*/
 }

@@ -98,7 +98,7 @@ namespace FluentValidation.Validators {
 			return this;
 		}
 
-		public override IValidator<TProperty> GetValidator(PropertyValidatorContext context) {
+		public override IValidator GetValidator(PropertyValidatorContext<T,TProperty> context) {
 			// bail out if the current item is null
 			if (context.PropertyValue == null) return null;
 
@@ -109,14 +109,12 @@ namespace FluentValidation.Validators {
 			return null;
 		}
 
-		protected override IValidationContext CreateNewValidationContextForChildValidator(PropertyValidatorContext context, IValidator<TProperty> validator) {
+		protected override ValidationContext<TProperty> CreateNewValidationContextForChildValidator(PropertyValidatorContext<T,TProperty> context, IValidator validator) {
 			// Can't use the base overload as the RuleSets are per inheritance validator.
-
 			var selector = validator is ValidatorWrapper wrapper && wrapper.RuleSets?.Length > 0 ? new RulesetValidatorSelector(wrapper.RuleSets) : null;
-			var parentContext = ValidationContext<T>.GetFromNonGenericContext(context.ParentContext);
-			var newContext = parentContext.CloneForChildValidator((TProperty)context.PropertyValue, true, selector);
+			var newContext = context.ParentContext.CloneForChildValidator(context.PropertyValue, true, selector);
 
-			if(!parentContext.IsChildCollectionContext)
+			if(!context.ParentContext.IsChildCollectionContext)
 				newContext.PropertyChain.Add(context.Rule.PropertyName);
 
 			return newContext;

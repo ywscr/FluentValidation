@@ -27,9 +27,9 @@ namespace FluentValidation.Validators {
 	/// <summary>
 	/// A custom property validator.
 	/// This interface should not be implemented directly in your code as it is subject to change.
-	/// Please inherit from <see cref="PropertyValidator">PropertyValidator</see> instead.
+	/// Please inherit from PropertyValidator instead.
 	/// </summary>
-	public interface IPropertyValidator<T,TProperty> {
+	public interface IPropertyValidator<T,TProperty> : IPropertyValidator {
 		/// <summary>
 		/// Performs validation
 		/// </summary>

@@ -18,7 +18,7 @@ namespace FluentValidation.Validators {
 	}
 
 	public class ChildValidatorAdaptor<T,TProperty> : NoopPropertyValidator<T, TProperty>, IChildValidatorAdaptor {
-		private readonly Func<ICommonContext, IValidator<TProperty>> _validatorProvider;
+		private readonly Func<PropertyValidatorContext<T,TProperty>, IValidator<TProperty>> _validatorProvider;
 		private readonly IValidator<TProperty> _validator;
 
 		public Type ValidatorType { get; }
@@ -32,7 +32,7 @@ namespace FluentValidation.Validators {
 			ValidatorType = validatorType;
 		}
 
-		public ChildValidatorAdaptor(Func<ICommonContext, IValidator<TProperty>> validatorProvider, Type validatorType) {
+		public ChildValidatorAdaptor(Func<PropertyValidatorContext<T,TProperty>, IValidator<TProperty>> validatorProvider, Type validatorType) {
 			_validatorProvider = validatorProvider;
 			ValidatorType = validatorType;
 		}
@@ -88,18 +88,21 @@ namespace FluentValidation.Validators {
 			return result.Errors;
 		}
 
-		public virtual IValidator<TProperty> GetValidator(PropertyValidatorContext<T,TProperty> context) {
+		/// <summary>
+		/// Gets the validator instance that will be used to validate the property.
+		/// </summary>
+		/// <param name="context">Current context</param>
+		/// <returns>The validator instance to use.</returns>
+		public virtual IValidator GetValidator(PropertyValidatorContext<T,TProperty> context) {
 			context.Guard("Cannot pass a null context to GetValidator", nameof(context));
-
 			return _validatorProvider != null ? _validatorProvider(context) : _validator;
 		}
 
-		protected virtual ValidationContext<TProperty> CreateNewValidationContextForChildValidator(PropertyValidatorContext<T,TProperty> context, IValidator<TProperty> validator) {
+		protected virtual ValidationContext<TProperty> CreateNewValidationContextForChildValidator(PropertyValidatorContext<T,TProperty> context, IValidator validator) {
 			var selector = RuleSets?.Length > 0 ? new RulesetValidatorSelector(RuleSets) : null;
-			var parentContext = ValidationContext<T>.GetFromNonGenericContext(context.ParentContext);
-			var newContext = parentContext.CloneForChildValidator(context.PropertyValue, PassThroughParentContext, selector);
+			var newContext = context.ParentContext.CloneForChildValidator(context.PropertyValue, PassThroughParentContext, selector);
 
-			if(!parentContext.IsChildCollectionContext)
+			if(!context.ParentContext.IsChildCollectionContext)
 				newContext.PropertyChain.Add(context.Rule.PropertyName);
 
 			return newContext;

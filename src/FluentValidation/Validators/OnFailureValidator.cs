@@ -6,11 +6,11 @@
 	using System.Threading;
 	using System.Threading.Tasks;
 
-	public class OnFailureValidator<T> : NoopPropertyValidator, IChildValidatorAdaptor {
-		private readonly IPropertyValidator _innerValidator;
-		private readonly Action<T, PropertyValidatorContext, string> _onFailure;
+	public class OnFailureValidator<T, TProperty> : NoopPropertyValidator<T, TProperty>, IChildValidatorAdaptor {
+		private readonly IPropertyValidator<T,TProperty> _innerValidator;
+		private readonly Action<T, PropertyValidatorContext<T,TProperty>, string> _onFailure;
 
-		public OnFailureValidator(IPropertyValidator innerValidator, Action<T, PropertyValidatorContext, string> onFailure) {
+		public OnFailureValidator(IPropertyValidator<T,TProperty> innerValidator, Action<T, PropertyValidatorContext<T,TProperty>, string> onFailure) {
 			_innerValidator = innerValidator;
 			_onFailure = onFailure;
 			// Make sure any conditions defined on the wrapped validator are applied
@@ -26,23 +26,19 @@
 			}
 		}
 
-		public override IEnumerable<ValidationFailure> Validate(PropertyValidatorContext context) {
-#pragma warning disable 618
+		public override IEnumerable<ValidationFailure> Validate(PropertyValidatorContext<T,TProperty> context) {
 			var results = _innerValidator.Validate(context).ToList();
-#pragma warning restore 618
 			if (!results.Any()) return results;
 			var errorMessage = results.First().ErrorMessage;
-			_onFailure((T) context.InstanceToValidate, context, errorMessage);
+			_onFailure(context.InstanceToValidate, context, errorMessage);
 			return results;
 		}
 
-		public override async Task<IEnumerable<ValidationFailure>> ValidateAsync(PropertyValidatorContext context, CancellationToken cancellation) {
-#pragma warning disable 618
+		public override async Task<IEnumerable<ValidationFailure>> ValidateAsync(PropertyValidatorContext<T,TProperty> context, CancellationToken cancellation) {
 			var results = (await _innerValidator.ValidateAsync(context, cancellation)).ToList();
-#pragma warning restore 618
 			if (!results.Any()) return results;
 			var errorMessage = results.First().ErrorMessage;
-			_onFailure((T) context.InstanceToValidate, context, errorMessage);
+			_onFailure(context.InstanceToValidate, context, errorMessage);
 			return results;
 		}
 

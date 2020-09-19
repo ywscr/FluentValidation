@@ -21,8 +21,8 @@ namespace FluentValidation.Validators {
 	using Internal;
 	using Resources;
 
-	public class ExclusiveBetweenValidator : PropertyValidator, IBetweenValidator {
-		public ExclusiveBetweenValidator(IComparable from, IComparable to) {
+	public class ExclusiveBetweenValidator<T,TProperty> : PropertyValidator<T,TProperty>, IBetweenValidator where TProperty : IComparable<TProperty>, IComparable {
+		public ExclusiveBetweenValidator(TProperty from, TProperty to) {
 			To = to;
 			From = from;
 
@@ -31,11 +31,14 @@ namespace FluentValidation.Validators {
 			}
 		}
 
-		public IComparable From { get; }
-		public IComparable To { get; }
+		public TProperty From { get; }
+		public TProperty To { get; }
 
-		protected override bool IsValid(PropertyValidatorContext context) {
-			var propertyValue = (IComparable)context.PropertyValue;
+		IComparable IBetweenValidator.From => From;
+		IComparable IBetweenValidator.To => To;
+
+		protected override bool IsValid(PropertyValidatorContext<T,TProperty> context) {
+			var propertyValue = context.PropertyValue;
 
 			// If the value is null then we abort and assume success.
 			// This should not be a failure condition - only a NotNull/NotEmpty should cause a null to fail.
@@ -54,7 +57,7 @@ namespace FluentValidation.Validators {
 		}
 
 		protected override string GetDefaultMessageTemplate() {
-			return Localized(nameof(ExclusiveBetweenValidator));
+			return Localized("ExclusiveBetweenValidator");
 		}
 	}
 }

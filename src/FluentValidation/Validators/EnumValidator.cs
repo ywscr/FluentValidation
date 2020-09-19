@@ -24,17 +24,12 @@ namespace FluentValidation.Validators {
 	using FluentValidation.Internal;
 	using Resources;
 
-	public class EnumValidator : PropertyValidator {
-		private readonly Type _enumType;
+	public class EnumValidator<T,TProperty> : PropertyValidator<T,TProperty> {
 
-		public EnumValidator(Type enumType) {
-			this._enumType = enumType;
-		}
-
-		protected override bool IsValid(PropertyValidatorContext context) {
+		protected override bool IsValid(PropertyValidatorContext<T,TProperty> context) {
 			if (context.PropertyValue == null) return true;
 
-			var underlyingEnumType = Nullable.GetUnderlyingType(_enumType) ?? _enumType;
+			var underlyingEnumType = Nullable.GetUnderlyingType(typeof(TProperty)) ?? typeof(TProperty);
 
 			if (!underlyingEnumType.IsEnum) return false;
 
@@ -114,7 +109,7 @@ namespace FluentValidation.Validators {
 		}
 
 		protected override string GetDefaultMessageTemplate() {
-			return Localized(nameof(EnumValidator));
+			return Localized("EnumValidator");
 		}
 	}
 }

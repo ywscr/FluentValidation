@@ -158,14 +158,6 @@ namespace FluentValidation.Internal {
 
 			return results;
 		}
-
-		private protected override Task<IEnumerable<ValidationFailure>> InvokeLegacyPropertyValidatorAsync(ValidationContext<T> context, PropertyRule<T> rule, IPropertyValidator validator, string propertyName, Lazy<object> accessor, CancellationToken cancellation) {
-			throw new NotImplementedException();
-		}
-
-		private protected override IEnumerable<ValidationFailure> InvokeLegacyPropertyValidator(ValidationContext<T> context, PropertyRule<T> rule, IPropertyValidator validator, string propertyName, Lazy<object> accessor) {
-			throw new NotImplementedException();
-		}
 	}
 
 	/// <summary>

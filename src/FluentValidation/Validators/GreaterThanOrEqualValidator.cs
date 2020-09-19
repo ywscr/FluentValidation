@@ -22,16 +22,16 @@ namespace FluentValidation.Validators {
 	using Internal;
 	using Resources;
 
-	public class GreaterThanOrEqualValidator : AbstractComparisonValidator  {
-		public GreaterThanOrEqualValidator(IComparable value) :
+	public class GreaterThanOrEqualValidator<T,TProperty> : AbstractComparisonValidator<T,TProperty> where TProperty : IComparable, IComparable<TProperty> {
+		public GreaterThanOrEqualValidator(TProperty value) :
 			base(value) {
 		}
 
-		public GreaterThanOrEqualValidator(Func<object, object> valueToCompareFunc, MemberInfo member, string memberDisplayName)
+		public GreaterThanOrEqualValidator(Func<T, TProperty> valueToCompareFunc, MemberInfo member, string memberDisplayName)
 			: base(valueToCompareFunc, member, memberDisplayName) {
 		}
 
-		public override bool IsValid(IComparable value, IComparable valueToCompare) {
+		public override bool IsValid(TProperty value, TProperty valueToCompare) {
 			if (valueToCompare == null)
 				return false;
 
@@ -41,7 +41,7 @@ namespace FluentValidation.Validators {
 		public override Comparison Comparison => Validators.Comparison.GreaterThanOrEqual;
 
 		protected override string GetDefaultMessageTemplate() {
-			return Localized(nameof(GreaterThanOrEqualValidator));
+			return Localized("GreaterThanOrEqualValidator");
 		}
 	}
 }
