@@ -73,7 +73,7 @@ namespace FluentValidation.Validators {
 		/// <returns></returns>
 		public PolymorphicValidator<T, TProperty> Add<TDerived>(Func<T, TDerived, IValidator<TDerived>> validatorFactory, params string[] ruleSets) where TDerived : TProperty {
 			if (validatorFactory == null) throw new ArgumentNullException(nameof(validatorFactory));
-			_derivedValidators[typeof(TDerived)] = new DerivedValidatorFactory(context => validatorFactory((T)context.ParentContext.InstanceToValidate, (TDerived)context.PropertyValue), ruleSets);
+			_derivedValidators[typeof(TDerived)] = new DerivedValidatorFactory(context => validatorFactory(context.ParentContext.InstanceToValidate, (TDerived)context.PropertyValue), ruleSets);
 			return this;
 		}
 
@@ -122,7 +122,7 @@ namespace FluentValidation.Validators {
 
 		private class DerivedValidatorFactory {
 			private IValidator _innerValidator;
-			private readonly Func<PropertyValidatorContext, IValidator> _factory;
+			private readonly Func<PropertyValidatorContext<T,TProperty>, IValidator> _factory;
 			public string[] RuleSets { get; }
 
 			public DerivedValidatorFactory(IValidator innerValidator, string[] ruleSets) {
@@ -130,12 +130,12 @@ namespace FluentValidation.Validators {
 				RuleSets = ruleSets;
 			}
 
-			public DerivedValidatorFactory(Func<PropertyValidatorContext, IValidator> factory, string[] ruleSets) {
+			public DerivedValidatorFactory(Func<PropertyValidatorContext<T,TProperty>, IValidator> factory, string[] ruleSets) {
 				RuleSets = ruleSets;
 				_factory = factory;
 			}
 
-			public IValidator GetValidator(PropertyValidatorContext context) {
+			public IValidator GetValidator(PropertyValidatorContext<T,TProperty> context) {
 				return _factory?.Invoke(context) ?? _innerValidator;
 			}
 		}
