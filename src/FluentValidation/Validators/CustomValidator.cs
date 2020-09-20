@@ -59,7 +59,7 @@
 	/// <summary>
 	/// Custom validation context
 	/// </summary>
-	public class CustomContext<T,TProperty> : ICommonContext {
+	public class CustomContext<T,TProperty> {
 		private PropertyValidatorContext<T,TProperty> _context;
 		private List<ValidationFailure> _failures = new List<ValidationFailure>();
 
@@ -107,7 +107,6 @@
 		public MessageFormatter MessageFormatter => _context.MessageFormatter;
 		public object InstanceToValidate => _context.InstanceToValidate;
 		public object PropertyValue => _context.PropertyValue;
-		ICommonContext ICommonContext.ParentContext => ParentContext;
 		public IValidationContext ParentContext => _context.ParentContext;
 	}
 }

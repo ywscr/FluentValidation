@@ -29,7 +29,9 @@ namespace FluentValidation.Validators {
 		: PropertyValidator<T,TProperty>, IComparisonValidator where TProperty : IComparable<TProperty>, IComparable {
 
 		readonly Func<T, TProperty> _valueToCompareFunc;
+		private readonly Func<T, IComparable> _otherComparableFunc;
 		private readonly string _comparisonMemberDisplayName;
+
 
 		/// <summary>
 		/// </summary>
@@ -49,6 +51,18 @@ namespace FluentValidation.Validators {
 			_comparisonMemberDisplayName = memberDisplayName;
 			MemberToCompare = member;
 		}
+
+		/// <summary>
+		/// </summary>
+		/// <param name="valueToCompareFunc"></param>
+		/// <param name="member"></param>
+		/// <param name="memberDisplayName"></param>
+		protected AbstractComparisonValidator(Func<T, IComparable> valueToCompareFunc, MemberInfo member, string memberDisplayName) {
+			_otherComparableFunc = valueToCompareFunc;
+			_comparisonMemberDisplayName = memberDisplayName;
+			MemberToCompare = member;
+		}
+
 
 		/// <summary>
 		/// Performs the comparison
@@ -73,7 +87,7 @@ namespace FluentValidation.Validators {
 			return true;
 		}
 
-		public TProperty GetComparisonValue(PropertyValidatorContext<T,TProperty> context) {
+		public virtual TProperty GetComparisonValue(PropertyValidatorContext<T,TProperty> context) {
 			if(_valueToCompareFunc != null) {
 				return _valueToCompareFunc(context.InstanceToValidate);
 			}

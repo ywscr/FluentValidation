@@ -40,5 +40,11 @@ namespace FluentValidation.Validators {
 		}
 
 		public PropertyValidatorOptions<T, TProperty> Options { get; } = new PropertyValidatorOptions<T,TProperty>();
+		public bool HasCondition => Options.HasCondition;
+		public bool HasAsyncCondition => Options.HasAsyncCondition;
+
+		string IPropertyValidator.GetErrorMessageTemplate(IPropertyValidatorContext context) {
+			return Options.GetErrorMessageTemplate(context as PropertyValidatorContext<T, TProperty>);
+		}
 	}
 }

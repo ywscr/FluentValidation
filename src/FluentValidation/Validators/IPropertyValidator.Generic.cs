@@ -17,19 +17,17 @@
 #endregion
 
 namespace FluentValidation.Validators {
-	using System;
 	using System.Collections.Generic;
 	using System.Threading;
 	using System.Threading.Tasks;
-	using Resources;
-	using Results;t
+	using Results;
 
 	/// <summary>
 	/// A custom property validator.
 	/// This interface should not be implemented directly in your code as it is subject to change.
 	/// Please inherit from PropertyValidator instead.
 	/// </summary>
-	public interface IPropertyValidator<T,in TProperty> : IPropertyValidator {
+	public interface IPropertyValidator<T,TProperty> : IPropertyValidator {
 		/// <summary>
 		/// Performs validation
 		/// </summary>

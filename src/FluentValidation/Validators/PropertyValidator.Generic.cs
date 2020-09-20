@@ -148,5 +148,9 @@ namespace FluentValidation.Validators {
 
 			return failure;
 		}
+
+		string IPropertyValidator.GetErrorMessageTemplate(IPropertyValidatorContext context) {
+			return GetErrorMessageTemplate(context as PropertyValidatorContext<T, TProperty>);
+		}
 	}
 }
