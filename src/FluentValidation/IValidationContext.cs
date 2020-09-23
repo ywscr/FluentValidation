@@ -3,31 +3,11 @@ namespace FluentValidation {
 	using System.Collections.Generic;
 	using Internal;
 
-	// /// <summary>
-	// /// Defines a validation context.
-	// /// </summary>
-	// public interface ICommonContext {
-	// 	/// <summary>
-	// 	/// The object currently being validated.
-	// 	/// </summary>
-	// 	object InstanceToValidate { get; }
-	//
-	// 	/// <summary>
-	// 	/// The value of the property being validated.
-	// 	/// </summary>
-	// 	object PropertyValue { get; }
-	//
-	// 	/// <summary>
-	// 	/// Parent validation context.
-	// 	/// </summary>
-	// 	ICommonContext ParentContext { get; }
-	// }
-
-	public interface IValidationContext {
+	public interface IValidationContext<T> {
 		/// <summary>
 		/// The object currently being validated.
 		/// </summary>
-		object InstanceToValidate { get; }
+		T InstanceToValidate { get; }
 
 		/// <summary>
 		/// Additional data associated with the validation request.
@@ -53,7 +33,9 @@ namespace FluentValidation {
 		/// Whether this is a child collection context.
 		/// </summary>
 		bool IsChildCollectionContext { get; }
+	}
 
+	public interface IValidationContext : IValidationContext<object> {
 		/// <summary>
 		/// Parent validation context.
 		/// </summary>
@@ -64,7 +46,7 @@ namespace FluentValidation {
 	/// Validation context
 	/// </summary>
 	/// <typeparam name="T"></typeparam>
-	public class ValidationContext<T> : IValidationContext {
+	public class ValidationContext<T> : IValidationContext<T>, IValidationContext {
 		private IValidationContext _parentContext;
 
 		/// <summary>
@@ -116,7 +98,7 @@ namespace FluentValidation {
 		/// <summary>
 		/// Object being validated
 		/// </summary>
-		object IValidationContext.InstanceToValidate => InstanceToValidate;
+		object IValidationContext<object>.InstanceToValidate => InstanceToValidate;
 
 		/// <summary>
 		/// Selector
