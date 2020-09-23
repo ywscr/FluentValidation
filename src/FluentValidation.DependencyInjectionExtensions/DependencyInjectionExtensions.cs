@@ -75,43 +75,7 @@ namespace FluentValidation {
 
 			throw new InvalidOperationException("The service provider has not been configured to work with FluentValidation. Making use of InjectValidator or GetServiceProvider is only supported when using the automatic MVC integration.");
 		}
-
-		/// <summary>
-		/// Gets the service provider associated with the validation context.
-		/// </summary>
-		/// <param name="context"></param>
-		/// <returns></returns>
-		/// <exception cref="InvalidOperationException"></exception>
-		public static IServiceProvider GetServiceProvider(this ICommonContext context) {
-			IValidationContext actualContext = null;
-
-			switch (context) {
-				case CustomContext cc:
-					actualContext = cc.ParentContext;
-					break;
-				case MessageBuilderContext mbc:
-					actualContext = mbc.ParentContext;
-					break;
-				case PropertyValidatorContext pvc:
-					actualContext = pvc.ParentContext;
-					break;
-				case IValidationContext vc:
-					actualContext = vc;
-					break;
-			}
-
-			if (actualContext != null) {
-				if (actualContext.RootContextData.TryGetValue("_FV_ServiceProvider", out var sp)) {
-					if (sp is IServiceProvider serviceProvider) {
-						return serviceProvider;
-					}
-				}
-
-			}
-
-			throw new InvalidOperationException("The service provider has not been configured to work with FluentValidation. Making use of InjectValidator or GetServiceProvider is only supported when using the automatic MVC integration.");
-		}
-
+		
 		/// <summary>
 		/// Sets the service provider associated with the validation context.
 		/// </summary>
