@@ -1,4 +1,5 @@
 #region License
+
 // Copyright (c) .NET Foundation and contributors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,6 +15,7 @@
 // limitations under the License.
 //
 // The latest version of this file can be found at https://github.com/FluentValidation/FluentValidation
+
 #endregion
 
 namespace FluentValidation {
@@ -48,20 +50,21 @@ namespace FluentValidation {
 		/// <returns></returns>
 		public virtual string GetName(string property) {
 			var nameUsed = Rules
-				.OfType<PropertyRule>()
+				.OfType<PropertyRule<T>>()
 				.Where(x => x.PropertyName == property)
 				.Select(x => x.GetDisplayName(null)).FirstOrDefault();
 
 			return nameUsed;
 		}
+
 		/// <summary>
 		/// Gets all members with their associated validators
 		/// </summary>
 		/// <returns></returns>
 		public virtual ILookup<string, IPropertyValidator> GetMembersWithValidators() {
-			var query = from rule in Rules.OfType<PropertyRule>()
-						from validator in rule.Validators
-						select new { propertyName = rule.PropertyName, validator };
+			var query = from rule in Rules.OfType<PropertyRule<T>>()
+				from validator in rule.Validators
+				select new {propertyName = rule.PropertyName, validator};
 
 			return query.ToLookup(x => x.propertyName, x => x.validator);
 		}
@@ -81,9 +84,9 @@ namespace FluentValidation {
 		/// <param name="name"></param>
 		/// <returns></returns>
 		public IEnumerable<IValidationRule> GetRulesForMember(string name) {
-			var query = from rule in Rules.OfType<PropertyRule>()
-						where rule.PropertyName == name
-						select (IValidationRule)rule;
+			var query = from rule in Rules.OfType<PropertyRule<T>>()
+				where rule.PropertyName == name
+				select (IValidationRule) rule;
 
 			return query.ToList();
 		}
@@ -109,12 +112,11 @@ namespace FluentValidation {
 		/// <typeparam name="TValue"></typeparam>
 		/// <param name="accessor"></param>
 		/// <returns></returns>
-		public IEnumerable<IPropertyValidator> GetValidatorsForMember<TValue>(MemberAccessor<T, TValue> accessor)
-		{
-			return from rule in Rules.OfType<PropertyRule>()
-			       where Equals(rule.Member, accessor.Member)
-			       from validator in rule.Validators
-			       select validator;
+		public IEnumerable<IPropertyValidator> GetValidatorsForMember<TValue>(MemberAccessor<T, TValue> accessor) {
+			return from rule in Rules.OfType<PropertyRule<T>>()
+				where Equals(rule.Member, accessor.Member)
+				from validator in rule.Validators
+				select validator;
 		}
 
 
@@ -123,11 +125,11 @@ namespace FluentValidation {
 		/// </summary>
 		/// <returns></returns>
 		public IEnumerable<RulesetMetadata> GetRulesByRuleset() {
-			var query = from rule in Rules.OfType<PropertyRule>()
-						from ruleset in rule.RuleSets
-						group rule by ruleset
-						into grp
-						select new RulesetMetadata(grp.Key, grp);
+			var query = from rule in Rules.OfType<PropertyRule<T>>()
+				from ruleset in rule.RuleSets
+				group rule by ruleset
+				into grp
+				select new RulesetMetadata(grp.Key, grp);
 
 			return query.ToList();
 		}
@@ -136,13 +138,12 @@ namespace FluentValidation {
 		/// Information about rulesets
 		/// </summary>
 		public class RulesetMetadata {
-
 			/// <summary>
 			/// Creates a new RulesetMetadata
 			/// </summary>
 			/// <param name="name"></param>
 			/// <param name="rules"></param>
-			public RulesetMetadata(string name, IEnumerable<PropertyRule> rules) {
+			public RulesetMetadata(string name, IEnumerable<PropertyRule<T>> rules) {
 				Name = name;
 				Rules = rules;
 			}
@@ -155,7 +156,7 @@ namespace FluentValidation {
 			/// <summary>
 			/// Rules in the ruleset
 			/// </summary>
-			public IEnumerable<PropertyRule> Rules { get; private set; }
+			public IEnumerable<PropertyRule<T>> Rules { get; private set; }
 		}
 	}
 }

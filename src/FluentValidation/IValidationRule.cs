@@ -33,17 +33,53 @@ namespace FluentValidation {
 		/// The validators that are grouped under this rule.
 		/// </summary>
 		IEnumerable<IPropertyValidator> Validators { get; }
+
 		/// <summary>
 		/// Name of the rule-set to which this rule belongs.
 		/// </summary>
 		string[] RuleSets { get; set; }
 
 		/// <summary>
+		/// Display name for the property.
+		/// </summary>
+		string GetDisplayName(IValidationContext context);
+
+		/// <summary>
+		/// Returns the property name for the property being validated.
+		/// Returns null if it is not a property being validated (eg a method call)
+		/// </summary>
+		string PropertyName { get; }
+
+		/// <summary>
+		/// Whether this rule has a condition.
+		/// </summary>
+		bool HasCondition { get; }
+
+		/// <summary>
+		/// Whether this rule has an async condition.
+		/// </summary>
+		bool HasAsyncCondition { get; }
+
+		/// <summary>
+		/// Type of the property being validated
+		/// </summary>
+		Type TypeToValidate { get; }
+
+		// TODO: Remove this from the interface.
+		public Func<MessageBuilderContext, string> MessageBuilder { get; }
+	}
+
+	/// <summary>
+	/// Defines a rule associated with a property which can have multiple validators.
+	/// </summary>
+	public interface IValidationRule<T> : IValidationRule {
+
+		/// <summary>
 		/// Performs validation using a validation context and returns a collection of Validation Failures.
 		/// </summary>
 		/// <param name="context">Validation Context</param>
 		/// <returns>A collection of validation failures</returns>
-		IEnumerable<ValidationFailure> Validate(IValidationContext context);
+		IEnumerable<ValidationFailure> Validate(IValidationContext<T> context);
 
 		/// <summary>
 		/// Performs validation using a validation context and returns a collection of Validation Failures asynchronously.
@@ -51,32 +87,32 @@ namespace FluentValidation {
 		/// <param name="context">Validation Context</param>
 		/// <param name="cancellation">Cancellation token</param>
 		/// <returns>A collection of validation failures</returns>
-		Task<IEnumerable<ValidationFailure>> ValidateAsync(IValidationContext context, CancellationToken cancellation);
+		Task<IEnumerable<ValidationFailure>> ValidateAsync(IValidationContext<T> context, CancellationToken cancellation);
 
 		/// <summary>
 		/// Applies a condition to either all the validators in the rule, or the most recent validator in the rule chain.
 		/// </summary>
 		/// <param name="predicate">The condition to apply</param>
 		/// <param name="applyConditionTo">Indicates whether the condition should be applied to all validators in the rule, or only the current one</param>
-		void ApplyCondition(Func<IValidationContext, bool> predicate, ApplyConditionTo applyConditionTo = ApplyConditionTo.AllValidators);
+		void ApplyCondition(Func<IValidationContext<T>, bool> predicate, ApplyConditionTo applyConditionTo = ApplyConditionTo.AllValidators);
 
 		/// <summary>
 		/// Applies an asynchronous condition to either all the validators in the rule, or the most recent validator in the rule chain.
 		/// </summary>
 		/// <param name="predicate">The condition to apply</param>
 		/// <param name="applyConditionTo">Indicates whether the condition should be applied to all validators in the rule, or only the current one</param>
-		void ApplyAsyncCondition(Func<IValidationContext, CancellationToken, Task<bool>> predicate, ApplyConditionTo applyConditionTo = ApplyConditionTo.AllValidators);
+		void ApplyAsyncCondition(Func<IValidationContext<T>, CancellationToken, Task<bool>> predicate, ApplyConditionTo applyConditionTo = ApplyConditionTo.AllValidators);
 
 		/// <summary>
 		/// Applies a condition that wraps the entire rule.
 		/// </summary>
 		/// <param name="condition">The condition to apply.</param>
-		void ApplySharedCondition(Func<IValidationContext, bool> condition);
+		void ApplySharedCondition(Func<IValidationContext<T>, bool> condition);
 
 		/// <summary>
 		/// Applies an asynchronous condition that wraps the entire rule.
 		/// </summary>
 		/// <param name="condition">The condition to apply.</param>
-		void ApplySharedAsyncCondition(Func<IValidationContext, CancellationToken, Task<bool>> condition);
+		void ApplySharedAsyncCondition(Func<IValidationContext<T>, CancellationToken, Task<bool>> condition);
 	}
 }

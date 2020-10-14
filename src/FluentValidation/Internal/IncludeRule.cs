@@ -15,7 +15,7 @@ namespace FluentValidation.Internal {
 	/// <summary>
 	/// Include rule
 	/// </summary>
-	public class IncludeRule<T> : PropertyRule, IIncludeRule {
+	public class IncludeRule<T> : PropertyRule<T>, IIncludeRule {
 		/// <summary>
 		/// Creates a new IncludeRule
 		/// </summary>
@@ -62,14 +62,14 @@ namespace FluentValidation.Internal {
 		}
 
 
-		public override IEnumerable<ValidationFailure> Validate(IValidationContext context) {
+		public override IEnumerable<ValidationFailure> Validate(IValidationContext<T> context) {
 			context.RootContextData[MemberNameValidatorSelector.DisableCascadeKey] = true;
 			var result = base.Validate(context).ToList();
 			context.RootContextData.Remove(MemberNameValidatorSelector.DisableCascadeKey);
 			return result;
 		}
 
-		public override async Task<IEnumerable<ValidationFailure>> ValidateAsync(IValidationContext context, CancellationToken cancellation) {
+		public override async Task<IEnumerable<ValidationFailure>> ValidateAsync(IValidationContext<T> context, CancellationToken cancellation) {
 			context.RootContextData[MemberNameValidatorSelector.DisableCascadeKey] = true;
 			var result = await base.ValidateAsync(context, cancellation);
 			result = result.ToList();

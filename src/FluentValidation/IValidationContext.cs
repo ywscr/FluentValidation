@@ -138,7 +138,7 @@ namespace FluentValidation {
 		/// <exception cref="ArgumentNullException"></exception>
 		/// <exception cref="NotSupportedException"></exception>
 		public static ValidationContext<T> GetFromNonGenericContext(IValidationContext context) {
-			if (context == null) throw new ArgumentNullException(nameof(context));
+			if (context == null) return null;
 
 			// Already of the correct type.
 			if (context is ValidationContext<T> c) {
