@@ -74,6 +74,7 @@ namespace FluentValidation.Internal {
 		/// <param name="context"></param>
 		/// <param name="validator"></param>
 		/// <param name="propertyName"></param>
+		/// <param name="accessor"></param>
 		/// <param name="cancellation"></param>
 		/// <returns></returns>
 		protected override async Task<IEnumerable<ValidationFailure>> InvokePropertyValidatorAsync(IValidationContext context, IPropertyValidator validator, string propertyName, Lazy<object> accessor, CancellationToken cancellation) {
@@ -151,6 +152,7 @@ namespace FluentValidation.Internal {
 		/// <param name="context"></param>
 		/// <param name="validator"></param>
 		/// <param name="propertyName"></param>
+		/// <param name="accessor"></param>
 		/// <returns></returns>
 		protected override IEnumerable<Results.ValidationFailure> InvokePropertyValidator(IValidationContext context, Validators.IPropertyValidator validator, string propertyName, Lazy<object> accessor) {
 			if (string.IsNullOrEmpty(propertyName)) {

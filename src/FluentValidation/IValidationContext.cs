@@ -3,11 +3,18 @@ namespace FluentValidation {
 	using System.Collections.Generic;
 	using Internal;
 
-	public interface IValidationContext<T> {
+	public interface IValidationContext<T> : IValidationContext {
 		/// <summary>
 		/// The object currently being validated.
 		/// </summary>
-		T InstanceToValidate { get; }
+		new T InstanceToValidate { get; }
+	}
+
+	public interface IValidationContext {
+		/// <summary>
+		/// The object currently being validated.
+		/// </summary>
+		object InstanceToValidate { get; }
 
 		/// <summary>
 		/// Additional data associated with the validation request.
@@ -33,9 +40,7 @@ namespace FluentValidation {
 		/// Whether this is a child collection context.
 		/// </summary>
 		bool IsChildCollectionContext { get; }
-	}
 
-	public interface IValidationContext : IValidationContext<object> {
 		/// <summary>
 		/// Parent validation context.
 		/// </summary>
@@ -98,7 +103,7 @@ namespace FluentValidation {
 		/// <summary>
 		/// Object being validated
 		/// </summary>
-		object IValidationContext<object>.InstanceToValidate => InstanceToValidate;
+		object IValidationContext.InstanceToValidate => InstanceToValidate;
 
 		/// <summary>
 		/// Selector

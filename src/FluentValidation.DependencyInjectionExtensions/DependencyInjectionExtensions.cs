@@ -16,12 +16,10 @@
 // The latest version of this file can be found at https://github.com/FluentValidation/FluentValidation
 #endregion
 
-using FluentValidation.Internal;
-
 namespace FluentValidation {
 	using System;
-	using System.Collections;
 	using System.Collections.Generic;
+	using Internal;
 	using Microsoft.Extensions.DependencyInjection;
 	using Validators;
 
@@ -29,6 +27,14 @@ namespace FluentValidation {
 	/// Extension methods for working with a Service Provider.
 	/// </summary>
 	public static class DependencyInjectionExtensions {
+		/// <summary>
+		/// Gets the service provider associated with the validation context.
+		/// </summary>
+		/// <param name="context"></param>
+		/// <returns></returns>
+		/// <exception cref="InvalidOperationException"></exception>
+		public static IServiceProvider GetServiceProvider<T>(this IValidationContext<T> context)
+			=> Get(context.RootContextData);
 
 		/// <summary>
 		/// Gets the service provider associated with the validation context.
@@ -75,7 +81,7 @@ namespace FluentValidation {
 
 			throw new InvalidOperationException("The service provider has not been configured to work with FluentValidation. Making use of InjectValidator or GetServiceProvider is only supported when using the automatic MVC integration.");
 		}
-		
+
 		/// <summary>
 		/// Sets the service provider associated with the validation context.
 		/// </summary>
@@ -107,7 +113,7 @@ namespace FluentValidation {
 		/// <typeparam name="TProperty"></typeparam>
 		/// <returns></returns>
 		public static IRuleBuilderOptions<T, TProperty> InjectValidator<T, TProperty>(this IRuleBuilder<T, TProperty> ruleBuilder, Func<IServiceProvider, ValidationContext<T>, IValidator<TProperty>> callback, params string[] ruleSets) {
-			var adaptor = new ChildValidatorAdaptor<T,TProperty>(context => {
+			var adaptor = new ChildValidatorAdaptor<T, TProperty>(context => {
 				var actualContext = (PropertyValidatorContext) context;
 				var serviceProvider = actualContext.ParentContext.GetServiceProvider();
 				var contextToUse = ValidationContext<T>.GetFromNonGenericContext(actualContext.ParentContext);
