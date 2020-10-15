@@ -31,7 +31,7 @@ namespace FluentValidation.Internal {
 		/// <summary>
 		/// The rule being created by this RuleBuilder.
 		/// </summary>
-		public PropertyRule<T> Rule { get; }
+		public IValidationRule<T> Rule { get; }
 
 		/// <summary>
 		/// Parent validator
@@ -41,7 +41,7 @@ namespace FluentValidation.Internal {
 		/// <summary>
 		/// Creates a new instance of the <see cref="RuleBuilder{T,TProperty}">RuleBuilder</see> class.
 		/// </summary>
-		public RuleBuilder(PropertyRule<T> rule, AbstractValidator<T> parent) {
+		public RuleBuilder(IValidationRule<T> rule, AbstractValidator<T> parent) {
 			Rule = rule;
 			ParentValidator = parent;
 		}
@@ -98,13 +98,13 @@ namespace FluentValidation.Internal {
 			return this;
 		}
 
-		IRuleBuilderInitial<T, TProperty> IRuleBuilderInitial<T, TProperty>.Configure(Action<PropertyRule<T>> configurator) {
-			configurator(Rule);
+		IRuleBuilderInitial<T, TProperty> IRuleBuilderInitial<T, TProperty>.Configure(Action<IValidationRule<T, TProperty>> configurator) {
+			configurator((IValidationRule<T, TProperty>) Rule);
 			return this;
 		}
 
-		IRuleBuilderOptions<T, TProperty> IRuleBuilderOptions<T, TProperty>.Configure(Action<PropertyRule<T>> configurator) {
-			configurator(Rule);
+		IRuleBuilderOptions<T, TProperty> IRuleBuilderOptions<T, TProperty>.Configure(Action<IValidationRule<T, TProperty>> configurator) {
+			configurator((IValidationRule<T, TProperty>) Rule);
 			return this;
 		}
 
@@ -113,10 +113,18 @@ namespace FluentValidation.Internal {
 			return this;
 		}
 
-		public IRuleBuilderInitial<T, TNew> Transform<TNew>(Func<TProperty, TNew> transformationFunc) {
-			if (transformationFunc == null) throw new ArgumentNullException(nameof(transformationFunc));
-			Rule.Transformer = transformationFunc.CoerceToNonGeneric();
-			return new RuleBuilder<T, TNew>(Rule, ParentValidator);
+		IRuleBuilderInitial<T, TTransformed> IRuleBuilderInitial<T, TProperty>.Transform<TTransformed>(Func<TProperty, TTransformed> transformer) {
+			if (transformer == null) throw new ArgumentNullException(nameof(transformer));
+			var rule = (PropertyRule<T, TProperty>) Rule;
+			var transformedRule = TransformedRule<T, TProperty, TTransformed>.Create(rule, transformer);
+			return new RuleBuilder<T, TTransformed>(transformedRule, ParentValidator);
+		}
+
+		IRuleBuilderInitial<T, TTransformed> IRuleBuilderInitialCollection<T, TProperty>.Transform<TTransformed>(Func<TProperty, TTransformed> transformer) {
+			if (transformer == null) throw new ArgumentNullException(nameof(transformer));
+			var rule = (CollectionPropertyRule<T, TProperty>) Rule;
+			var transformedRule = TransformedRule<T, TProperty, TTransformed>.CreateForCollection(rule, transformer);
+			return new RuleBuilder<T, TTransformed>(transformedRule, ParentValidator);
 		}
 
 		/// <summary>
@@ -132,8 +140,8 @@ namespace FluentValidation.Internal {
 
 			if (Rule.RuleSets.Length > 0) {
 				foreach (var dependentRule in dependencyContainer) {
-					if (dependentRule is PropertyRule<T> propRule && propRule.RuleSets.Length == 0) {
-						propRule.RuleSets = Rule.RuleSets;
+					if (dependentRule.RuleSets.Length == 0) {
+						dependentRule.RuleSets = Rule.RuleSets;
 					}
 				}
 			}

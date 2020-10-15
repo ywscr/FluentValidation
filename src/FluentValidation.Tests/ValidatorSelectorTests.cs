@@ -166,8 +166,8 @@ namespace FluentValidation.Tests {
 			result.Errors[0].PropertyName.ShouldEqual("Forename");
 		}
 
-		private PropertyRule<TestObject> CreateRule(Expression<Func<TestObject, object>> expression) {
-			var rule = PropertyRule<TestObject>.Create(expression);
+		private PropertyRule<TestObject, object> CreateRule(Expression<Func<TestObject, object>> expression) {
+			var rule = PropertyRule<TestObject, object>.Create(expression);
 			rule.AddValidator(new NotNullValidator());
 			return rule;
 		}

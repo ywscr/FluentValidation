@@ -198,7 +198,7 @@ namespace FluentValidation {
 			expression.Guard("Cannot pass null to RuleFor", nameof(expression));
 			// If rule-level caching is enabled, then bypass the expression-level cache.
 			// Otherwise we essentially end up caching expressions twice unnecessarily.
-			var rule = PropertyRule<T>.Create(expression, () => CascadeMode);
+			var rule = PropertyRule<T, TProperty>.Create(expression, () => CascadeMode);
 			AddRule(rule);
 			var ruleBuilder = new RuleBuilder<T, TProperty>(rule, this);
 			return ruleBuilder;

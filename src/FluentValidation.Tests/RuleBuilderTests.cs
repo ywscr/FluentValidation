@@ -31,7 +31,7 @@ namespace FluentValidation.Tests {
 	public class RuleBuilderTests {
 		IRuleBuilderInitial<Person, string> builder;
 		private InlineValidator<Person> _validator;
-		private PropertyRule<Person> _rule;
+		private IValidationRule<Person, string> _rule;
 
 
 		public  RuleBuilderTests() {
@@ -48,7 +48,7 @@ namespace FluentValidation.Tests {
 		[Fact]
 		public void Should_compile_expression() {
 			var person = new Person {Surname = "Foo"};
-			_rule.PropertyFunc(person).ShouldEqual("Foo");
+			((PropertyRule<Person, string>)_rule).PropertyFunc(person).ShouldEqual("Foo");
 		}
 
 		[Fact]
@@ -177,7 +177,7 @@ namespace FluentValidation.Tests {
 		[Fact]
 		public void PropertyDescription_should_return_property_name_split() {
 			var builder = _validator.RuleFor(x => x.DateOfBirth);
-			PropertyRule<Person> rule = null;
+			IValidationRule<Person, DateTime> rule = null;
 			builder.Configure(r => rule = r);
 			rule.GetDisplayName(null).ShouldEqual("Date Of Birth");
 		}
@@ -185,7 +185,7 @@ namespace FluentValidation.Tests {
 		[Fact]
 		public void PropertyDescription_should_return_custom_property_name() {
 			var builder = _validator.RuleFor(x => x.DateOfBirth);
-			PropertyRule<Person> rule = null;
+			IValidationRule<Person, DateTime> rule = null;
 			builder.Configure(r => rule = r);
 			builder.NotEqual(default(DateTime)).WithName("Foo");
 			rule.GetDisplayName(null).ShouldEqual("Foo");
@@ -194,7 +194,7 @@ namespace FluentValidation.Tests {
 		[Fact]
 		public void Nullable_object_with_condition_should_not_throw() {
 			var builder = _validator.RuleFor(x => x.NullableInt.Value);
-			PropertyRule<Person> rule = null;
+			IValidationRule<Person, int> rule = null;
 			builder.Configure(r => rule = r);
 
 			builder.GreaterThanOrEqualTo(3).When(x => x.NullableInt != null);
@@ -204,7 +204,7 @@ namespace FluentValidation.Tests {
 		[Fact]
 		public void Nullable_object_with_async_condition_should_not_throw() {
 			var builder = _validator.RuleFor(x => x.NullableInt.Value);
-			PropertyRule<Person> rule = null;
+			IValidationRule<Person, int> rule = null;
 			builder.Configure(r => rule = r);
 
 			builder.GreaterThanOrEqualTo(3).WhenAsync((x,c) => Task.FromResult(x.NullableInt != null));
@@ -214,7 +214,7 @@ namespace FluentValidation.Tests {
 		[Fact]
 		public void Rule_for_a_non_memberexpression_should_not_generate_property_name() {
 			var builder = _validator.RuleFor(x => x.CalculateSalary());
-			PropertyRule<Person> rule = null;
+			IValidationRule<Person, int> rule = null;
 			builder.Configure(r => rule = r);
 			rule.GetDisplayName(null).ShouldBeNull();
 			rule.PropertyName.ShouldBeNull();
@@ -229,7 +229,7 @@ namespace FluentValidation.Tests {
 		[Fact]
 		public void Property_should_return_null_when_it_is_not_a_property_being_validated() {
 			builder = _validator.RuleFor(x => "Foo");
-			PropertyRule<Person> rule = null;
+			IValidationRule<Person, string> rule = null;
 			builder.Configure(r => rule = r);
 			rule.Member.ShouldBeNull();
 		}
@@ -238,7 +238,7 @@ namespace FluentValidation.Tests {
 		public void Result_should_use_custom_property_name_when_no_property_name_can_be_determined() {
 			var builder = _validator.RuleFor(x => x.CalculateSalary());
 			builder.GreaterThan(100).WithName("Foo");
-			PropertyRule<Person> rule = null;
+			IValidationRule<Person, int> rule = null;
 			builder.Configure(r => rule = r);
 			var results = rule.Validate(new ValidationContext<Person>(new Person(), new PropertyChain(), new DefaultValidatorSelector()));
 			results.Single().PropertyName.ShouldEqual("Foo");
@@ -248,7 +248,7 @@ namespace FluentValidation.Tests {
 		public void Conditional_child_validator_should_register_with_validator_type_not_property() {
 			var builder = _validator.RuleFor(x => x.Address);
 			builder.SetValidator((Person person) => new NoopAddressValidator());
-			PropertyRule<Person> rule = null;
+			IValidationRule<Person, Address> rule = null;
 			builder.Configure(r => rule = r);
 
 			rule.Validators.OfType<IChildValidatorAdaptor>().Single().ValidatorType.ShouldEqual(typeof(NoopAddressValidator));

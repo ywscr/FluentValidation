@@ -24,14 +24,13 @@ namespace FluentValidation.Internal {
 	using System.Reflection;
 	using System.Threading;
 	using System.Threading.Tasks;
-	using Resources;
 	using Results;
 	using Validators;
 
 	/// <summary>
 	/// Defines a rule associated with a property.
 	/// </summary>
-	public class PropertyRule<T> : IValidationRule<T> {
+	public class PropertyRule<T, TProperty> : IValidationRule<T, TProperty> {
 		private readonly List<IPropertyValidator> _validators = new List<IPropertyValidator>();
 		private Func<CascadeMode> _cascadeModeThunk;
 		private string _propertyDisplayName;
@@ -41,6 +40,9 @@ namespace FluentValidation.Internal {
 		private Func<IValidationContext<T>, CancellationToken, Task<bool>> _asyncCondition;
 		private string _displayName;
 		private Func<IValidationContext<T>, string> _displayNameFactory;
+
+		internal Func<IValidationContext<T>, IEnumerable<ValidationFailure>> ValidationFunction { get; set; }
+		internal Func<IValidationContext<T>, CancellationToken, Task<IEnumerable<ValidationFailure>>> AsyncValidationFunction { get; set; }
 
 		/// <summary>
 		/// Condition for all validators in this rule.
@@ -60,7 +62,7 @@ namespace FluentValidation.Internal {
 		/// <summary>
 		/// Function that can be invoked to retrieve the value of the property.
 		/// </summary>
-		public Func<object, object> PropertyFunc { get; }
+		public Func<T, TProperty> PropertyFunc { get; }
 
 		/// <summary>
 		/// Expression that was used to create the rule.
@@ -107,7 +109,7 @@ namespace FluentValidation.Internal {
 		/// <summary>
 		/// Type of the property being validated
 		/// </summary>
-		public Type TypeToValidate { get; }
+		public virtual Type TypeToValidate => typeof(TProperty);
 
 		/// <summary>
 		/// Cascade mode for this rule.
@@ -129,34 +131,32 @@ namespace FluentValidation.Internal {
 		/// <param name="propertyFunc">Function to get the property value</param>
 		/// <param name="expression">Lambda expression used to create the rule</param>
 		/// <param name="cascadeModeThunk">Function to get the cascade mode.</param>
-		/// <param name="typeToValidate">Type to validate</param>
-		/// <param name="containerType">Container type that owns the property</param>
-		public PropertyRule(MemberInfo member, Func<object, object> propertyFunc, LambdaExpression expression, Func<CascadeMode> cascadeModeThunk, Type typeToValidate, Type containerType) {
+		public PropertyRule(MemberInfo member, Func<T, TProperty> propertyFunc, LambdaExpression expression, Func<CascadeMode> cascadeModeThunk) {
 			Member = member;
 			PropertyFunc = propertyFunc;
 			Expression = expression;
-			TypeToValidate = typeToValidate;
 			_cascadeModeThunk = cascadeModeThunk;
 
 			DependentRules = new List<IValidationRule<T>>();
-			PropertyName = ValidatorOptions.Global.PropertyNameResolver(containerType, member, expression);
-			_displayNameFactory = context => ValidatorOptions.Global.DisplayNameResolver(containerType, member, expression);
+			PropertyName = ValidatorOptions.Global.PropertyNameResolver(typeof(T), member, expression);
+			_displayNameFactory = context => ValidatorOptions.Global.DisplayNameResolver(typeof(T), member, expression);
 		}
 
 		/// <summary>
 		/// Creates a new property rule from a lambda expression.
 		/// </summary>
-		public static PropertyRule<T> Create<TProperty>(Expression<Func<T, TProperty>> expression) {
+		public static PropertyRule<T, TProperty> Create(Expression<Func<T, TProperty>> expression) {
 			return Create(expression, () => ValidatorOptions.Global.CascadeMode);
 		}
 
 		/// <summary>
 		/// Creates a new property rule from a lambda expression.
 		/// </summary>
-		public static PropertyRule<T> Create<TProperty>(Expression<Func<T, TProperty>> expression, Func<CascadeMode> cascadeModeThunk, bool bypassCache = false) {
+		public static PropertyRule<T, TProperty> Create(Expression<Func<T, TProperty>> expression, Func<CascadeMode> cascadeModeThunk, bool bypassCache = false) {
 			var member = expression.GetMember();
 			var compiled = AccessorCache<T>.GetCachedAccessor(member, expression, bypassCache);
-			return new PropertyRule<T>(member, compiled.CoerceToNonGeneric(), expression, cascadeModeThunk, typeof(TProperty), typeof(T));
+			var rule = new PropertyRule<T, TProperty>(member, compiled, expression, cascadeModeThunk);
+			return rule;
 		}
 
 		/// <summary>
@@ -219,8 +219,6 @@ namespace FluentValidation.Internal {
 		/// </summary>
 		public List<IValidationRule<T>> DependentRules { get; }
 
-		public Func<object, object> Transformer { get; set; }
-
 		string IValidationRule.GetDisplayName(IValidationContext context)
 			=> GetDisplayName(ValidationContext<T>.GetFromNonGenericContext(context));
 
@@ -235,7 +233,29 @@ namespace FluentValidation.Internal {
 		/// </summary>
 		/// <param name="context">Validation Context</param>
 		/// <returns>A collection of validation failures</returns>
-		public virtual IEnumerable<ValidationFailure> Validate(IValidationContext<T> context) {
+		public IEnumerable<ValidationFailure> Validate(IValidationContext<T> context) {
+			if (ValidationFunction != null) {
+				return ValidationFunction(context);
+			}
+
+			return ValidateInternal(context, PropertyFunc);
+		}
+
+		/// <summary>
+		/// Performs asynchronous validation using a validation context and returns a collection of Validation Failures.
+		/// </summary>
+		/// <param name="context">Validation Context</param>
+		/// <param name="cancellation"></param>
+		/// <returns>A collection of validation failures</returns>
+		public Task<IEnumerable<ValidationFailure>> ValidateAsync(IValidationContext<T> context, CancellationToken cancellation) {
+			if (AsyncValidationFunction != null) {
+				return AsyncValidationFunction(context, cancellation);
+			}
+
+			return ValidateInternalAsync(context, PropertyFunc, cancellation);
+		}
+
+		internal virtual IEnumerable<ValidationFailure> ValidateInternal<TValue>(IValidationContext<T> context, Func<T, TValue> accessorFunc) {
 			string displayName = GetDisplayName(context);
 
 			if (PropertyName == null && displayName == null) {
@@ -249,28 +269,28 @@ namespace FluentValidation.Internal {
 			// Ensure that this rule is allowed to run.
 			// The validatselector has the opportunity to veto this before any of the validators execute.
 			if (!context.Selector.CanExecute(this, propertyName, context)) {
-				yield break;
+				return Enumerable.Empty<ValidationFailure>();
 			}
 
-			if (_condition != null) {
-				if (!_condition(context)) {
-					yield break;
+			if (HasCondition) {
+				if (!Condition(context)) {
+					return Enumerable.Empty<ValidationFailure>();
 				}
 			}
 
 			// TODO: For FV 9, throw an exception by default if synchronous validator has async condition.
-			if (_asyncCondition != null) {
-				if (!_asyncCondition(context, default).GetAwaiter().GetResult()) {
-					yield break;
+			if (HasAsyncCondition) {
+				if (! AsyncCondition(context, default).GetAwaiter().GetResult()) {
+					return Enumerable.Empty<ValidationFailure>();
 				}
 			}
 
-			var cascade = _cascadeModeThunk();
+			var cascade = CascadeMode;
 			var failures = new List<ValidationFailure>();
-			var accessor = new Lazy<object>(() => GetPropertyValue(context.InstanceToValidate), LazyThreadSafetyMode.None);
+			var accessor = new Lazy<TValue>(() => accessorFunc(context.InstanceToValidate), LazyThreadSafetyMode.None);
 
 			// Invoke each validator and collect its results.
-			foreach (var validator in _validators) {
+			foreach (var validator in Validators) {
 				IEnumerable<ValidationFailure> results;
 				if (validator.ShouldValidateAsynchronously(context))
 					//TODO: For FV 9 by default disallow invocation of async validators when running synchronously.
@@ -283,7 +303,6 @@ namespace FluentValidation.Internal {
 				foreach (var result in results) {
 					failures.Add(result);
 					hasFailure = true;
-					yield return result;
 				}
 
 				// If there has been at least one failure, and our CascadeMode has been set to StopOnFirst
@@ -301,20 +320,14 @@ namespace FluentValidation.Internal {
 			}
 			else {
 				foreach (var dependentRule in DependentRules) {
-					foreach (var failure in dependentRule.Validate(context)) {
-						yield return failure;
-					}
+					failures.AddRange(dependentRule.Validate(context));
 				}
 			}
+
+			return failures;
 		}
 
-		/// <summary>
-		/// Performs asynchronous validation using a validation context and returns a collection of Validation Failures.
-		/// </summary>
-		/// <param name="context">Validation Context</param>
-		/// <param name="cancellation"></param>
-		/// <returns>A collection of validation failures</returns>
-		public virtual async Task<IEnumerable<ValidationFailure>> ValidateAsync(IValidationContext<T> context, CancellationToken cancellation) {
+		internal virtual async Task<IEnumerable<ValidationFailure>> ValidateInternalAsync<TValue>(IValidationContext<T> context, Func<T, TValue> accessorFunc, CancellationToken cancellation) {
 			if (!context.IsAsync()) {
 				context.RootContextData["__FV_IsAsyncExecution"] = true;
 			}
@@ -335,24 +348,24 @@ namespace FluentValidation.Internal {
 				return Enumerable.Empty<ValidationFailure>();
 			}
 
-			if (_condition != null) {
-				if (!_condition(context)) {
+			if (HasCondition) {
+				if (!Condition(context)) {
 					return Enumerable.Empty<ValidationFailure>();
 				}
 			}
 
-			if (_asyncCondition != null) {
-				if (! await _asyncCondition(context, cancellation)) {
+			if (HasAsyncCondition) {
+				if (! await AsyncCondition(context, cancellation)) {
 					return Enumerable.Empty<ValidationFailure>();
 				}
 			}
 
-			var cascade = _cascadeModeThunk();
+			var cascade = CascadeMode;
 			var failures = new List<ValidationFailure>();
-			var accessor = new Lazy<object>(() => GetPropertyValue(context.InstanceToValidate), LazyThreadSafetyMode.None);
+			var accessor = new Lazy<TValue>(() => accessorFunc(context.InstanceToValidate), LazyThreadSafetyMode.None);
 
 			// Invoke each validator and collect its results.
-			foreach (var validator in _validators) {
+			foreach (var validator in Validators) {
 				cancellation.ThrowIfCancellationRequested();
 
 				IEnumerable<ValidationFailure> results;
@@ -388,7 +401,20 @@ namespace FluentValidation.Internal {
 			return failures;
 		}
 
-		private async Task<IEnumerable<ValidationFailure>> RunDependentRulesAsync(IValidationContext<T> context, CancellationToken cancellation) {
+		private async Task<IEnumerable<ValidationFailure>> InvokePropertyValidatorAsync<TValue>(IValidationContext<T> context, IPropertyValidator validator, string propertyName, Lazy<TValue> accessor, CancellationToken cancellation) {
+			if (!validator.Options.InvokeCondition(context)) return Enumerable.Empty<ValidationFailure>();
+			if (!await validator.Options.InvokeAsyncCondition(context, cancellation)) return Enumerable.Empty<ValidationFailure>();
+			var propertyContext = new PropertyValidatorContext(context, this, propertyName, accessor.Value);
+			return await validator.ValidateAsync(propertyContext, cancellation);
+		}
+
+		private IEnumerable<ValidationFailure> InvokePropertyValidator<TValue>(IValidationContext<T> context, IPropertyValidator validator, string propertyName, Lazy<TValue> accessor) {
+			if (!validator.Options.InvokeCondition(context)) return Enumerable.Empty<ValidationFailure>();
+			var propertyContext = new PropertyValidatorContext(context, this, propertyName, accessor.Value);
+			return validator.Validate(propertyContext);
+		}
+
+		internal async Task<IEnumerable<ValidationFailure>> RunDependentRulesAsync(IValidationContext<T> context, CancellationToken cancellation) {
 			var failures = new List<ValidationFailure>();
 
 			foreach (var rule in DependentRules) {
@@ -397,42 +423,6 @@ namespace FluentValidation.Internal {
 			}
 
 			return failures;
-		}
-
-		/// <summary>
-		/// Invokes the validator asynchronously
-		/// </summary>
-		/// <param name="context"></param>
-		/// <param name="validator"></param>
-		/// <param name="propertyName"></param>
-		/// <param name="accessor"></param>
-		/// <param name="cancellation"></param>
-		/// <returns></returns>
-		protected virtual async Task<IEnumerable<ValidationFailure>> InvokePropertyValidatorAsync(IValidationContext<T> context, IPropertyValidator validator, string propertyName, Lazy<object> accessor, CancellationToken cancellation) {
-			if (!validator.Options.InvokeCondition(context)) return Enumerable.Empty<ValidationFailure>();
-			if (!await validator.Options.InvokeAsyncCondition(context, cancellation)) return Enumerable.Empty<ValidationFailure>();
-			var propertyContext = new PropertyValidatorContext(context, this, propertyName, accessor);
-			return await validator.ValidateAsync(propertyContext, cancellation);
-		}
-
-		/// <summary>
-		/// Invokes a property validator using the specified validation context.
-		/// </summary>
-		protected virtual IEnumerable<ValidationFailure> InvokePropertyValidator(IValidationContext<T> context, IPropertyValidator validator, string propertyName, Lazy<object> accessor) {
-			if (!validator.Options.InvokeCondition(context)) return Enumerable.Empty<ValidationFailure>();
-			var propertyContext = new PropertyValidatorContext(context, this, propertyName, accessor);
-			return validator.Validate(propertyContext);
-		}
-
-		/// <summary>
-		/// Gets the property value, including any transformations that need to be applied.
-		/// </summary>
-		/// <param name="instanceToValidate">The parent object</param>
-		/// <returns>The value to be validated</returns>
-		internal virtual object GetPropertyValue(T instanceToValidate) {
-			var value = PropertyFunc(instanceToValidate);
-			if (Transformer != null) value = Transformer(value);
-			return value;
 		}
 
 		/// <summary>
@@ -499,5 +489,6 @@ namespace FluentValidation.Internal {
 			}
 
 		}
+
 	}
 }

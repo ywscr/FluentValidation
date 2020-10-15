@@ -15,15 +15,13 @@ namespace FluentValidation.Internal {
 	/// <summary>
 	/// Include rule
 	/// </summary>
-	public class IncludeRule<T> : PropertyRule<T>, IIncludeRule {
+	public class IncludeRule<T> : PropertyRule<T, T>, IIncludeRule {
 		/// <summary>
 		/// Creates a new IncludeRule
 		/// </summary>
 		/// <param name="validator"></param>
 		/// <param name="cascadeModeThunk"></param>
-		/// <param name="typeToValidate"></param>
-		/// <param name="containerType"></param>
-		public IncludeRule(IValidator<T> validator, Func<CascadeMode> cascadeModeThunk, Type typeToValidate, Type containerType) : base(null, x => x, null, cascadeModeThunk, typeToValidate, containerType) {
+		public IncludeRule(IValidator<T> validator, Func<CascadeMode> cascadeModeThunk) : base(null, x => x, null, cascadeModeThunk) {
 			AddValidator(new ChildValidatorAdaptor<T,T>(validator, validator.GetType()));
 		}
 
@@ -32,11 +30,9 @@ namespace FluentValidation.Internal {
 		/// </summary>
 		/// <param name="func"></param>
 		/// <param name="cascadeModeThunk"></param>
-		/// <param name="typeToValidate"></param>
-		/// <param name="containerType"></param>
 		/// <param name="validatorType"></param>
-		public IncludeRule(Func<PropertyValidatorContext, IValidator<T>> func,  Func<CascadeMode> cascadeModeThunk, Type typeToValidate, Type containerType, Type validatorType) : base(null, x => x, null, cascadeModeThunk, typeToValidate, containerType) {
-			AddValidator(new ChildValidatorAdaptor<T,T>(func,  validatorType));
+		public IncludeRule(Func<PropertyValidatorContext, IValidator<T>> func,  Func<CascadeMode> cascadeModeThunk, Type validatorType) : base(null, x => x, null, cascadeModeThunk) {
+			AddValidator(new ChildValidatorAdaptor<T,T>(func, validatorType));
 		}
 
 		/// <summary>
@@ -46,7 +42,7 @@ namespace FluentValidation.Internal {
 		/// <param name="cascadeModeThunk"></param>
 		/// <returns></returns>
 		public static IncludeRule<T> Create(IValidator<T> validator, Func<CascadeMode> cascadeModeThunk) {
-			return new IncludeRule<T>(validator, cascadeModeThunk, typeof(T), typeof(T));
+			return new IncludeRule<T>(validator, cascadeModeThunk);
 		}
 
 		/// <summary>
@@ -58,21 +54,19 @@ namespace FluentValidation.Internal {
 		/// <returns></returns>
 		public static IncludeRule<T> Create<TValidator>(Func<T, TValidator> func, Func<CascadeMode> cascadeModeThunk)
 			where TValidator : IValidator<T> {
-			return new IncludeRule<T>(ctx => func((T)ctx.InstanceToValidate), cascadeModeThunk, typeof(T), typeof(T), typeof(TValidator));
+			return new IncludeRule<T>(ctx => func((T)ctx.InstanceToValidate), cascadeModeThunk, typeof(TValidator));
 		}
 
-
-		public override IEnumerable<ValidationFailure> Validate(IValidationContext<T> context) {
+		internal override IEnumerable<ValidationFailure> ValidateInternal<TValue>(IValidationContext<T> context, Func<T, TValue> accessorFunc) {
 			context.RootContextData[MemberNameValidatorSelector.DisableCascadeKey] = true;
-			var result = base.Validate(context).ToList();
+			var result = base.ValidateInternal(context, accessorFunc);
 			context.RootContextData.Remove(MemberNameValidatorSelector.DisableCascadeKey);
 			return result;
 		}
 
-		public override async Task<IEnumerable<ValidationFailure>> ValidateAsync(IValidationContext<T> context, CancellationToken cancellation) {
+		internal override Task<IEnumerable<ValidationFailure>> ValidateInternalAsync<TValue>(IValidationContext<T> context, Func<T, TValue> accessorFunc, CancellationToken cancellation) {
 			context.RootContextData[MemberNameValidatorSelector.DisableCascadeKey] = true;
-			var result = await base.ValidateAsync(context, cancellation);
-			result = result.ToList();
+			var result = base.ValidateInternalAsync(context, accessorFunc, cancellation);
 			context.RootContextData.Remove(MemberNameValidatorSelector.DisableCascadeKey);
 			return result;
 		}

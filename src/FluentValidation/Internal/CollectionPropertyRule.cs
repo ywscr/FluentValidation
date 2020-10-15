@@ -34,7 +34,8 @@ namespace FluentValidation.Internal {
 	/// </summary>
 	/// <typeparam name="TElement"></typeparam>
 	/// <typeparam name="T"></typeparam>
-	public class CollectionPropertyRule<T, TElement> : PropertyRule<T> {
+	public class CollectionPropertyRule<T, TElement> : PropertyRule<T, IEnumerable<TElement>>, IValidationRule<T, TElement> {
+
 		/// <summary>
 		/// Initializes new instance of the CollectionPropertyRule class
 		/// </summary>
@@ -42,10 +43,13 @@ namespace FluentValidation.Internal {
 		/// <param name="propertyFunc"></param>
 		/// <param name="expression"></param>
 		/// <param name="cascadeModeThunk"></param>
-		/// <param name="typeToValidate"></param>
-		/// <param name="containerType"></param>
-		public CollectionPropertyRule(MemberInfo member, Func<object, object> propertyFunc, LambdaExpression expression, Func<CascadeMode> cascadeModeThunk, Type typeToValidate, Type containerType) : base(member, propertyFunc, expression, cascadeModeThunk, typeToValidate, containerType) {
+		public CollectionPropertyRule(MemberInfo member, Func<T, IEnumerable<TElement>> propertyFunc, LambdaExpression expression, Func<CascadeMode> cascadeModeThunk) : base(member, propertyFunc, expression, cascadeModeThunk) {
+			static TElement NoTransform(TElement element) => element;
+			ValidationFunction = context => ValidateCollection(context, NoTransform);
+			AsyncValidationFunction = (context, cancel) => ValidateCollectionAsync(context, NoTransform, cancel);
 		}
+
+		public override Type TypeToValidate => typeof(TElement);
 
 		/// <summary>
 		/// Filter that should include/exclude items in the collection.
@@ -65,19 +69,156 @@ namespace FluentValidation.Internal {
 			var member = expression.GetMember();
 			var compiled = expression.Compile();
 
-			return new CollectionPropertyRule<T, TElement>(member, compiled.CoerceToNonGeneric(), expression, cascadeModeThunk, typeof(TElement), typeof(T));
+			return new CollectionPropertyRule<T, TElement>(member, compiled, expression, cascadeModeThunk);
 		}
 
-		/// <summary>
-		/// Invokes the validator asynchronously
-		/// </summary>
-		/// <param name="context"></param>
-		/// <param name="validator"></param>
-		/// <param name="propertyName"></param>
-		/// <param name="accessor"></param>
-		/// <param name="cancellation"></param>
-		/// <returns></returns>
-		protected override async Task<IEnumerable<ValidationFailure>> InvokePropertyValidatorAsync(IValidationContext<T> context, IPropertyValidator validator, string propertyName, Lazy<object> accessor, CancellationToken cancellation) {
+		internal IEnumerable<ValidationFailure> ValidateCollection<TValue>(IValidationContext<T> context, Func<TElement, TValue> transformFunc) {
+			string displayName = GetDisplayName(context);
+
+			if (PropertyName == null && displayName == null) {
+				//No name has been specified. Assume this is a model-level rule, so we should use empty string instead.
+				displayName = string.Empty;
+			}
+
+			// Construct the full name of the property, taking into account overriden property names and the chain (if we're in a nested validator)
+			string propertyName = context.PropertyChain.BuildPropertyName(PropertyName ?? displayName);
+
+			// Ensure that this rule is allowed to run.
+			// The validatselector has the opportunity to veto this before any of the validators execute.
+			if (!context.Selector.CanExecute(this, propertyName, context)) {
+				return Enumerable.Empty<ValidationFailure>();
+			}
+
+			if (HasCondition) {
+				if (!Condition(context)) {
+					return Enumerable.Empty<ValidationFailure>();
+				}
+			}
+
+			// TODO: For FV 9, throw an exception by default if synchronous validator has async condition.
+			if (HasAsyncCondition) {
+				if (! AsyncCondition(context, default).GetAwaiter().GetResult()) {
+					return Enumerable.Empty<ValidationFailure>();
+				}
+			}
+
+			var cascade = CascadeMode;
+			var failures = new List<ValidationFailure>();
+			var accessor = new Lazy<IEnumerable<TElement>>(() => PropertyFunc(context.InstanceToValidate), LazyThreadSafetyMode.None);
+
+			// Invoke each validator and collect its results.
+			foreach (var validator in Validators) {
+				IEnumerable<ValidationFailure> results;
+				if (validator.ShouldValidateAsynchronously(context))
+					//TODO: For FV 9 by default disallow invocation of async validators when running synchronously.
+					results = InvokePropertyValidatorAsync(context, validator, propertyName, accessor, transformFunc, default).GetAwaiter().GetResult();
+				else
+					results = InvokePropertyValidator(context, validator, propertyName, accessor, transformFunc);
+
+				bool hasFailure = false;
+
+				foreach (var result in results) {
+					failures.Add(result);
+					hasFailure = true;
+				}
+
+				// If there has been at least one failure, and our CascadeMode has been set to StopOnFirst
+				// then don't continue to the next rule
+#pragma warning disable 618
+				if (hasFailure && (cascade == CascadeMode.StopOnFirstFailure || cascade == CascadeMode.Stop)) {
+#pragma warning restore 618
+					break;
+				}
+			}
+
+			if (failures.Count > 0) {
+				// Callback if there has been at least one property validator failed.
+				OnFailure?.Invoke(context.InstanceToValidate, failures);
+			}
+			else {
+				foreach (var dependentRule in DependentRules) {
+					failures.AddRange(dependentRule.Validate(context));
+				}
+			}
+
+			return failures;
+		}
+
+		internal async Task<IEnumerable<ValidationFailure>> ValidateCollectionAsync<TValue>(IValidationContext<T> context, Func<TElement, TValue> transformFunc, CancellationToken cancellation) {
+			if (!context.IsAsync()) {
+				context.RootContextData["__FV_IsAsyncExecution"] = true;
+			}
+
+			string displayName = GetDisplayName(context);
+
+			if (PropertyName == null && displayName == null) {
+				//No name has been specified. Assume this is a model-level rule, so we should use empty string instead.
+				displayName = string.Empty;
+			}
+
+			// Construct the full name of the property, taking into account overriden property names and the chain (if we're in a nested validator)
+			string propertyName = context.PropertyChain.BuildPropertyName(PropertyName ?? displayName);
+
+			// Ensure that this rule is allowed to run.
+			// The validatselector has the opportunity to veto this before any of the validators execute.
+			if (!context.Selector.CanExecute(this, propertyName, context)) {
+				return Enumerable.Empty<ValidationFailure>();
+			}
+
+			if (HasCondition) {
+				if (!Condition(context)) {
+					return Enumerable.Empty<ValidationFailure>();
+				}
+			}
+
+			if (HasAsyncCondition) {
+				if (! await AsyncCondition(context, cancellation)) {
+					return Enumerable.Empty<ValidationFailure>();
+				}
+			}
+
+			var cascade = CascadeMode;
+			var failures = new List<ValidationFailure>();
+			var accessor = new Lazy<IEnumerable<TElement>>(() => PropertyFunc(context.InstanceToValidate), LazyThreadSafetyMode.None);
+
+			// Invoke each validator and collect its results.
+			foreach (var validator in Validators) {
+				cancellation.ThrowIfCancellationRequested();
+
+				IEnumerable<ValidationFailure> results;
+				if (validator.ShouldValidateAsynchronously(context))
+					results = await InvokePropertyValidatorAsync(context, validator, propertyName, accessor, transformFunc, cancellation);
+				else
+					results = InvokePropertyValidator(context, validator, propertyName, accessor, transformFunc);
+
+				bool hasFailure = false;
+
+				foreach (var result in results) {
+					failures.Add(result);
+					hasFailure = true;
+				}
+
+				// If there has been at least one failure, and our CascadeMode has been set to StopOnFirst
+				// then don't continue to the next rule
+#pragma warning disable 618
+				if (hasFailure && (cascade == CascadeMode.StopOnFirstFailure || cascade == CascadeMode.Stop)) {
+#pragma warning restore 618
+					break;
+				}
+			}
+
+			if (failures.Count > 0) {
+				// Callback if there has been at least one property validator failed.
+				OnFailure?.Invoke(context.InstanceToValidate, failures);
+			}
+			else {
+				failures.AddRange(await RunDependentRulesAsync(context, cancellation));
+			}
+
+			return failures;
+		}
+
+		private async Task<IEnumerable<ValidationFailure>> InvokePropertyValidatorAsync<TValue>(IValidationContext<T> context, IPropertyValidator validator, string propertyName, Lazy<IEnumerable<TElement>> accessor, Func<TElement, TValue> transformer, CancellationToken cancellation) {
 			if (string.IsNullOrEmpty(propertyName)) {
 				propertyName = InferPropertyName(Expression);
 			}
@@ -85,7 +226,7 @@ namespace FluentValidation.Internal {
 			if (!validator.Options.InvokeCondition(context)) return Enumerable.Empty<ValidationFailure>();
 			if (!await validator.Options.InvokeAsyncCondition(context, cancellation)) return Enumerable.Empty<ValidationFailure>();
 
-			var collectionPropertyValue = accessor.Value as IEnumerable<TElement>;
+			var collectionPropertyValue = accessor.Value;
 
 			if (collectionPropertyValue != null) {
 				if (string.IsNullOrEmpty(propertyName)) {
@@ -111,15 +252,9 @@ namespace FluentValidation.Internal {
 					newContext.PropertyChain.Add(propertyName);
 					newContext.PropertyChain.AddIndexer(indexer, useDefaultIndexFormat);
 
-					object valueToValidate = element;
-
-					if (Transformer != null) {
-						valueToValidate = Transformer(element);
-					}
-
+					var valueToValidate = transformer(element);
 					var newPropertyContext = new PropertyValidatorContext(newContext, this, newContext.PropertyChain.ToString(), valueToValidate);
 					newPropertyContext.MessageFormatter.AppendArgument("CollectionIndex", index);
-
 					return await validator.ValidateAsync(newPropertyContext, cancellation);
 				});
 
@@ -136,25 +271,7 @@ namespace FluentValidation.Internal {
 			return Enumerable.Empty<ValidationFailure>();
 		}
 
-		private string InferPropertyName(LambdaExpression expression) {
-			var paramExp = expression.Body as ParameterExpression;
-
-			if (paramExp == null) {
-				throw new InvalidOperationException("Could not infer property name for expression: " + expression + ". Please explicitly specify a property name by calling OverridePropertyName as part of the rule chain. Eg: RuleForEach(x => x).NotNull().OverridePropertyName(\"MyProperty\")");
-			}
-
-			return paramExp.Name;
-		}
-
-		/// <summary>
-		/// Invokes the validator
-		/// </summary>
-		/// <param name="context"></param>
-		/// <param name="validator"></param>
-		/// <param name="propertyName"></param>
-		/// <param name="accessor"></param>
-		/// <returns></returns>
-		protected override IEnumerable<Results.ValidationFailure> InvokePropertyValidator(IValidationContext<T> context, Validators.IPropertyValidator validator, string propertyName, Lazy<object> accessor) {
+		private IEnumerable<Results.ValidationFailure> InvokePropertyValidator<TValue>(IValidationContext<T> context, IPropertyValidator validator, string propertyName, Lazy<IEnumerable<TElement>> accessor, Func<TElement, TValue> transformer) {
 			if (string.IsNullOrEmpty(propertyName)) {
 				propertyName = InferPropertyName(Expression);
 			}
@@ -164,7 +281,7 @@ namespace FluentValidation.Internal {
 			// the parent PropertyRule will call InvokePropertyValidatorAsync instead.
 
 			var results = new List<ValidationFailure>();
-			var collectionPropertyValue = accessor.Value as IEnumerable<TElement>;
+			var collectionPropertyValue = accessor.Value;
 
 			int count = 0;
 
@@ -194,12 +311,7 @@ namespace FluentValidation.Internal {
 					newContext.PropertyChain.Add(propertyName);
 					newContext.PropertyChain.AddIndexer(indexer, useDefaultIndexFormat);
 
-					object valueToValidate = element;
-
-					if (Transformer != null) {
-						valueToValidate = Transformer(element);
-					}
-
+					var valueToValidate = transformer(element);
 					var newPropertyContext = new PropertyValidatorContext(newContext, this, newContext.PropertyChain.ToString(), valueToValidate);
 					newPropertyContext.MessageFormatter.AppendArgument("CollectionIndex", index);
 					results.AddRange(validator.Validate(newPropertyContext));
@@ -209,10 +321,15 @@ namespace FluentValidation.Internal {
 			return results;
 		}
 
-		internal override object GetPropertyValue(T instanceToValidate) {
-			// Unlike the base class, we do not want to perform the transformation in here, just return the raw value.
-			// with collection rules, the transformation should be applied to individual elements instead.
-			return PropertyFunc(instanceToValidate);
+		private string InferPropertyName(LambdaExpression expression) {
+			var paramExp = expression.Body as ParameterExpression;
+
+			if (paramExp == null) {
+				throw new InvalidOperationException("Could not infer property name for expression: " + expression + ". Please explicitly specify a property name by calling OverridePropertyName as part of the rule chain. Eg: RuleForEach(x => x).NotNull().OverridePropertyName(\"MyProperty\")");
+			}
+
+			return paramExp.Name;
 		}
+
 	}
 }
