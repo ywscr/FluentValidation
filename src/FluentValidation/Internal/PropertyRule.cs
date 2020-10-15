@@ -97,7 +97,7 @@ namespace FluentValidation.Internal {
 		/// <summary>
 		/// Function that will be invoked if any of the validators associated with this rule fail.
 		/// </summary>
-		public Action<object, IEnumerable<ValidationFailure>> OnFailure { get; set; }
+		public Action<T, IEnumerable<ValidationFailure>> OnFailure { get; set; }
 
 		/// <summary>
 		/// The current validator being configured by this rule.
@@ -429,7 +429,7 @@ namespace FluentValidation.Internal {
 		/// </summary>
 		/// <param name="instanceToValidate">The parent object</param>
 		/// <returns>The value to be validated</returns>
-		internal virtual object GetPropertyValue(object instanceToValidate) {
+		internal virtual object GetPropertyValue(T instanceToValidate) {
 			var value = PropertyFunc(instanceToValidate);
 			if (Transformer != null) value = Transformer(value);
 			return value;

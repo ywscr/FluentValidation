@@ -56,7 +56,7 @@ namespace FluentValidation.Internal {
 		/// Constructs the indexer in the property name associated with the error message.
 		/// By default this is "[" + index + "]"
 		/// </summary>
-		public Func<object, IEnumerable<TElement>, TElement, int, string> IndexBuilder { get; set; }
+		public Func<T, IEnumerable<TElement>, TElement, int, string> IndexBuilder { get; set; }
 
 		/// <summary>
 		/// Creates a new property rule from a lambda expression.
@@ -209,7 +209,7 @@ namespace FluentValidation.Internal {
 			return results;
 		}
 
-		internal override object GetPropertyValue(object instanceToValidate) {
+		internal override object GetPropertyValue(T instanceToValidate) {
 			// Unlike the base class, we do not want to perform the transformation in here, just return the raw value.
 			// with collection rules, the transformation should be applied to individual elements instead.
 			return PropertyFunc(instanceToValidate);
