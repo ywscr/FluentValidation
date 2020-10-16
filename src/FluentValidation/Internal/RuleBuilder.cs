@@ -119,6 +119,12 @@ namespace FluentValidation.Internal {
 			return new RuleBuilder<T, TTransformed>(transformedRule, ParentValidator);
 		}
 
+		public IRuleBuilderInitial<T, TTransformed> Transform<TTransformed>(Func<T, TProperty, TTransformed> transformer) {
+			if (transformer == null) throw new ArgumentNullException(nameof(transformer));
+			var transformedRule = new TransformedRule<T, TProperty, TTransformed>(Rule, transformer);
+			return new RuleBuilder<T, TTransformed>(transformedRule, ParentValidator);
+		}
+
 		/// <summary>
 		/// Creates a scope for declaring dependent rules.
 		/// </summary>

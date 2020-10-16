@@ -44,7 +44,7 @@ namespace FluentValidation.Internal {
 		/// <param name="expression"></param>
 		/// <param name="cascadeModeThunk"></param>
 		public CollectionPropertyRule(MemberInfo member, Func<T, IEnumerable<TElement>> propertyFunc, LambdaExpression expression, Func<CascadeMode> cascadeModeThunk) : base(member, propertyFunc, expression, cascadeModeThunk) {
-			static TElement NoTransform(TElement element) => element;
+			static TElement NoTransform(T _, TElement element) => element;
 			ValidationFunction = context => ValidateCollection(context, NoTransform);
 			AsyncValidationFunction = (context, cancel) => ValidateCollectionAsync(context, NoTransform, cancel);
 		}
@@ -72,7 +72,7 @@ namespace FluentValidation.Internal {
 			return new CollectionPropertyRule<T, TElement>(member, compiled, expression, cascadeModeThunk);
 		}
 
-		internal IEnumerable<ValidationFailure> ValidateCollection<TValue>(IValidationContext<T> context, Func<TElement, TValue> transformFunc) {
+		internal IEnumerable<ValidationFailure> ValidateCollection<TValue>(IValidationContext<T> context, Func<T, TElement, TValue> transformFunc) {
 			string displayName = GetDisplayName(context);
 
 			if (PropertyName == null && displayName == null) {
@@ -144,7 +144,7 @@ namespace FluentValidation.Internal {
 			return failures;
 		}
 
-		internal async Task<IEnumerable<ValidationFailure>> ValidateCollectionAsync<TValue>(IValidationContext<T> context, Func<TElement, TValue> transformFunc, CancellationToken cancellation) {
+		internal async Task<IEnumerable<ValidationFailure>> ValidateCollectionAsync<TValue>(IValidationContext<T> context, Func<T, TElement, TValue> transformFunc, CancellationToken cancellation) {
 			if (!context.IsAsync()) {
 				context.RootContextData["__FV_IsAsyncExecution"] = true;
 			}
@@ -218,7 +218,7 @@ namespace FluentValidation.Internal {
 			return failures;
 		}
 
-		private async Task<IEnumerable<ValidationFailure>> InvokePropertyValidatorAsync<TValue>(IValidationContext<T> context, IPropertyValidator validator, string propertyName, Lazy<IEnumerable<TElement>> accessor, Func<TElement, TValue> transformer, CancellationToken cancellation) {
+		private async Task<IEnumerable<ValidationFailure>> InvokePropertyValidatorAsync<TValue>(IValidationContext<T> context, IPropertyValidator validator, string propertyName, Lazy<IEnumerable<TElement>> accessor, Func<T, TElement, TValue> transformer, CancellationToken cancellation) {
 			if (string.IsNullOrEmpty(propertyName)) {
 				propertyName = InferPropertyName(Expression);
 			}
@@ -252,7 +252,7 @@ namespace FluentValidation.Internal {
 					newContext.PropertyChain.Add(propertyName);
 					newContext.PropertyChain.AddIndexer(indexer, useDefaultIndexFormat);
 
-					var valueToValidate = transformer(element);
+					var valueToValidate = transformer(context.InstanceToValidate, element);
 					var newPropertyContext = new PropertyValidatorContext(newContext, this, newContext.PropertyChain.ToString(), valueToValidate);
 					newPropertyContext.MessageFormatter.AppendArgument("CollectionIndex", index);
 					return await validator.ValidateAsync(newPropertyContext, cancellation);
@@ -271,7 +271,7 @@ namespace FluentValidation.Internal {
 			return Enumerable.Empty<ValidationFailure>();
 		}
 
-		private IEnumerable<Results.ValidationFailure> InvokePropertyValidator<TValue>(IValidationContext<T> context, IPropertyValidator validator, string propertyName, Lazy<IEnumerable<TElement>> accessor, Func<TElement, TValue> transformer) {
+		private IEnumerable<Results.ValidationFailure> InvokePropertyValidator<TValue>(IValidationContext<T> context, IPropertyValidator validator, string propertyName, Lazy<IEnumerable<TElement>> accessor, Func<T, TElement, TValue> transformer) {
 			if (string.IsNullOrEmpty(propertyName)) {
 				propertyName = InferPropertyName(Expression);
 			}
@@ -311,7 +311,7 @@ namespace FluentValidation.Internal {
 					newContext.PropertyChain.Add(propertyName);
 					newContext.PropertyChain.AddIndexer(indexer, useDefaultIndexFormat);
 
-					var valueToValidate = transformer(element);
+					var valueToValidate = transformer(context.InstanceToValidate, element);
 					var newPropertyContext = new PropertyValidatorContext(newContext, this, newContext.PropertyChain.ToString(), valueToValidate);
 					newPropertyContext.MessageFormatter.AppendArgument("CollectionIndex", index);
 					results.AddRange(validator.Validate(newPropertyContext));
