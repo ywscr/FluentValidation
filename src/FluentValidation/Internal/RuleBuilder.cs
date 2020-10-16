@@ -31,7 +31,7 @@ namespace FluentValidation.Internal {
 		/// <summary>
 		/// The rule being created by this RuleBuilder.
 		/// </summary>
-		public IValidationRule<T> Rule { get; }
+		public IValidationRule<T, TProperty> Rule { get; }
 
 		/// <summary>
 		/// Parent validator
@@ -41,7 +41,7 @@ namespace FluentValidation.Internal {
 		/// <summary>
 		/// Creates a new instance of the <see cref="RuleBuilder{T,TProperty}">RuleBuilder</see> class.
 		/// </summary>
-		public RuleBuilder(IValidationRule<T> rule, AbstractValidator<T> parent) {
+		public RuleBuilder(IValidationRule<T, TProperty> rule, AbstractValidator<T> parent) {
 			Rule = rule;
 			ParentValidator = parent;
 		}
@@ -99,12 +99,12 @@ namespace FluentValidation.Internal {
 		}
 
 		IRuleBuilderInitial<T, TProperty> IRuleBuilderInitial<T, TProperty>.Configure(Action<IValidationRule<T, TProperty>> configurator) {
-			configurator((IValidationRule<T, TProperty>) Rule);
+			configurator(Rule);
 			return this;
 		}
 
 		IRuleBuilderOptions<T, TProperty> IRuleBuilderOptions<T, TProperty>.Configure(Action<IValidationRule<T, TProperty>> configurator) {
-			configurator((IValidationRule<T, TProperty>) Rule);
+			configurator(Rule);
 			return this;
 		}
 
@@ -113,17 +113,9 @@ namespace FluentValidation.Internal {
 			return this;
 		}
 
-		IRuleBuilderInitial<T, TTransformed> IRuleBuilderInitial<T, TProperty>.Transform<TTransformed>(Func<TProperty, TTransformed> transformer) {
+		public IRuleBuilderInitial<T, TTransformed> Transform<TTransformed>(Func<TProperty, TTransformed> transformer) {
 			if (transformer == null) throw new ArgumentNullException(nameof(transformer));
-			var rule = (PropertyRule<T, TProperty>) Rule;
-			var transformedRule = TransformedRule<T, TProperty, TTransformed>.Create(rule, transformer);
-			return new RuleBuilder<T, TTransformed>(transformedRule, ParentValidator);
-		}
-
-		IRuleBuilderInitial<T, TTransformed> IRuleBuilderInitialCollection<T, TProperty>.Transform<TTransformed>(Func<TProperty, TTransformed> transformer) {
-			if (transformer == null) throw new ArgumentNullException(nameof(transformer));
-			var rule = (CollectionPropertyRule<T, TProperty>) Rule;
-			var transformedRule = TransformedRule<T, TProperty, TTransformed>.CreateForCollection(rule, transformer);
+			var transformedRule = new TransformedRule<T, TProperty, TTransformed>(Rule, transformer);
 			return new RuleBuilder<T, TTransformed>(transformedRule, ParentValidator);
 		}
 

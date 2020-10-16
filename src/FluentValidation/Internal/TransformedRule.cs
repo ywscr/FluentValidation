@@ -26,43 +26,58 @@ namespace FluentValidation.Internal {
 	using Results;
 	using Validators;
 
+
+	internal interface ITransformedRule<T> {
+		void ReTransform<TTransformed>(Func<T, TTransformed> transformer);
+	}
 	/// <summary>
 	/// Wrapper for PropertyRule instances that handles transforming the property value to another type.
 	/// </summary>
-	internal class TransformedRule<T, TValue, TTransformed> : IValidationRule<T, TTransformed> {
+	internal class TransformedRule<T, TValue, TTransformed> : IValidationRule<T, TTransformed>, ITransformedRule<TTransformed> {
 		private IValidationRule<T, TValue> _inner;
+		private Func<TValue, TTransformed> _transformer;
 
-		public TransformedRule(IValidationRule<T, TValue> inner) {
+		public TransformedRule(IValidationRule<T, TValue> inner, Func<TValue, TTransformed> transformer) {
 			_inner = inner;
+			_transformer = transformer;
+
+			SetupTransformations<TTransformed>(inner, transformer);
 		}
 
-		public static TransformedRule<T, TValue, TTransformed> Create(PropertyRule<T,TValue> rule, Func<TValue, TTransformed> transformer) {
-			TTransformed Transformer(T instanceToValidate) {
-				return transformer(rule.PropertyFunc(instanceToValidate));
+		private static void SetupTransformations<TNew>(IValidationRule<T, TValue> inner, Func<TValue, TNew> transformer) {
+			if (inner is PropertyRule<T, TValue> pr) {
+				TNew Transformer(T instanceToValidate) {
+					return transformer(pr.PropertyFunc(instanceToValidate));
+				}
+
+				pr.ValidationFunction = context
+					=> pr.ValidateInternal(context, Transformer);
+
+				pr.AsyncValidationFunction = (context, cancel)
+					=> pr.ValidateInternalAsync(context, Transformer, cancel);
 			}
+			else if (inner is CollectionPropertyRule<T, TValue> cpr) {
+				TNew Transformer(TValue collectionElement) {
+					return transformer(collectionElement);
+				}
 
-			rule.ValidationFunction = context
-				=> rule.ValidateInternal(context, Transformer);
+				cpr.ValidationFunction = context =>
+					cpr.ValidateCollection(context, Transformer);
 
-			rule.AsyncValidationFunction = (context, cancel)
-				=> rule.ValidateInternalAsync(context, Transformer, cancel);
-
-			return new TransformedRule<T, TValue, TTransformed>(rule);
-		}
-
-		public static TransformedRule<T, TValue, TTransformed> CreateForCollection(CollectionPropertyRule<T, TValue> rule, Func<TValue, TTransformed> transformer) {
-			TTransformed Transformer(TValue collectionElement) {
-				return transformer(collectionElement);
+				cpr.AsyncValidationFunction = (context, cancel) =>
+					cpr.ValidateCollectionAsync(context, Transformer, cancel);
 			}
-
-			rule.ValidationFunction = context =>
-				rule.ValidateCollection(context, Transformer);
-
-			rule.AsyncValidationFunction = (context, cancel) =>
-				rule.ValidateCollectionAsync(context, Transformer, cancel);
-
-			return new TransformedRule<T, TValue, TTransformed>(rule);
+			else if (inner is ITransformedRule<TValue> tr) {
+				tr.ReTransform(transformer);
+			}
 		}
+
+		public void ReTransform<TNewTransform>(Func<TTransformed, TNewTransform> transformer) {
+			// This is for the (rare) use case where someone wants to do a double transform.
+			SetupTransformations(_inner, from => transformer(_transformer(from)));
+		}
+
+		#region Delegating Members
 
 		public IEnumerable<IPropertyValidator> Validators => _inner.Validators;
 
@@ -157,5 +172,6 @@ namespace FluentValidation.Internal {
 
 		public IPropertyValidator CurrentValidator => _inner.CurrentValidator;
 
+		#endregion
 	}
 }

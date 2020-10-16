@@ -42,6 +42,44 @@ namespace FluentValidation.Tests {
 		}
 
 		[Fact]
+		public async Task Transforms_property_value_to_another_type_async() {
+			var validator = new InlineValidator<Person>();
+			validator.RuleFor(x => x.Surname)
+				.Transform(name => 1)
+				.MustAsync((val, cancel) => Task.FromResult(val > 10));
+
+			var result = await validator.ValidateAsync(new Person {Surname = "bar"});
+			result.IsValid.ShouldBeFalse();
+			result.Errors[0].ErrorCode.ShouldEqual("AsyncPredicateValidator");
+		}
+
+		[Fact]
+		public void Double_Transforms_property_value_to_another_type() {
+			var validator = new InlineValidator<Person>();
+			validator.RuleFor(x => x.Surname)
+				.Transform(name => 1)
+				.Transform(val => val.ToString())
+				.NotEqual("1");
+
+			var result = validator.Validate(new Person {Surname = "bar"});
+			result.IsValid.ShouldBeFalse();
+			result.Errors[0].ErrorCode.ShouldEqual("NotEqualValidator");
+		}
+
+		[Fact]
+		public async Task Double_Transforms_property_value_to_another_type_async() {
+			var validator = new InlineValidator<Person>();
+			validator.RuleFor(x => x.Surname)
+				.Transform(name => 1)
+				.Transform(val => val.ToString())
+				.MustAsync((val, cancel) => Task.FromResult(val != "1"));
+
+			var result = await validator.ValidateAsync(new Person {Surname = "bar"});
+			result.IsValid.ShouldBeFalse();
+			result.Errors[0].ErrorCode.ShouldEqual("AsyncPredicateValidator");
+		}
+
+		[Fact]
 		public void Transforms_collection_element() {
 			var validator = new InlineValidator<Person>();
 			validator.RuleForEach(x => x.Orders)
@@ -58,6 +96,30 @@ namespace FluentValidation.Tests {
 			validator.RuleForEach(x => x.Orders)
 				.Transform(order => order.Amount)
 				.MustAsync((amt, token) => Task.FromResult(amt > 0));
+
+			var result = await validator.ValidateAsync(new Person() {Orders = new List<Order> {new Order()}});
+			result.Errors.Count.ShouldEqual(1);
+		}
+
+		[Fact]
+		public void Double_Transforms_collection_element() {
+			var validator = new InlineValidator<Person>();
+			validator.RuleForEach(x => x.Orders)
+				.Transform(order => order.Amount)
+				.Transform(amt => amt.ToString())
+				.NotEqual("0");
+
+			var result = validator.Validate(new Person() {Orders = new List<Order> {new Order()}});
+			result.Errors.Count.ShouldEqual(1);
+		}
+
+		[Fact]
+		public async Task Double_Transforms_collection_element_async() {
+			var validator = new InlineValidator<Person>();
+			validator.RuleForEach(x => x.Orders)
+				.Transform(order => order.Amount)
+				.Transform(amt => amt.ToString())
+				.MustAsync((amt, token) => Task.FromResult(amt != "0"));
 
 			var result = await validator.ValidateAsync(new Person() {Orders = new List<Order> {new Order()}});
 			result.Errors.Count.ShouldEqual(1);

@@ -489,6 +489,5 @@ namespace FluentValidation.Internal {
 			}
 
 		}
-
 	}
 }
