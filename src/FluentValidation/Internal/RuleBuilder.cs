@@ -115,14 +115,20 @@ namespace FluentValidation.Internal {
 
 		public IRuleBuilderInitial<T, TTransformed> Transform<TTransformed>(Func<TProperty, TTransformed> transformer) {
 			if (transformer == null) throw new ArgumentNullException(nameof(transformer));
-			var transformedRule = new TransformedRule<T, TProperty, TTransformed>(Rule, transformer);
-			return new RuleBuilder<T, TTransformed>(transformedRule, ParentValidator);
+			if (Rule is ITransformable<T, TProperty> t) {
+				var transformedRule = t.Transform((instance, value) => transformer(value));
+				return new RuleBuilder<T, TTransformed>(transformedRule, ParentValidator);
+			}
+			throw new NotSupportedException("Rule instance is not ITransformable.");
 		}
 
 		public IRuleBuilderInitial<T, TTransformed> Transform<TTransformed>(Func<T, TProperty, TTransformed> transformer) {
 			if (transformer == null) throw new ArgumentNullException(nameof(transformer));
-			var transformedRule = new TransformedRule<T, TProperty, TTransformed>(Rule, transformer);
-			return new RuleBuilder<T, TTransformed>(transformedRule, ParentValidator);
+			if (Rule is ITransformable<T, TProperty> t) {
+				var transformedRule = t.Transform(transformer);
+				return new RuleBuilder<T, TTransformed>(transformedRule, ParentValidator);
+			}
+			throw new NotSupportedException("Rule instance is not ITransformable.");
 		}
 
 		/// <summary>

@@ -30,7 +30,7 @@ namespace FluentValidation.Internal {
 	/// <summary>
 	/// Defines a rule associated with a property.
 	/// </summary>
-	public class PropertyRule<T, TProperty> : IValidationRule<T, TProperty> {
+	public class PropertyRule<T, TProperty> : IValidationRule<T, TProperty>, ITransformable<T,TProperty> {
 		private readonly List<IPropertyValidator> _validators = new List<IPropertyValidator>();
 		private Func<CascadeMode> _cascadeModeThunk;
 		private string _propertyDisplayName;
@@ -488,6 +488,15 @@ namespace FluentValidation.Internal {
 				_asyncCondition = async (ctx, ct) => await condition(ctx, ct) && await original(ctx, ct);
 			}
 
+		}
+
+		IValidationRule<T, TTransformed> ITransformable<T, TProperty>.Transform<TTransformed>(Func<T, TProperty, TTransformed> transformer) {
+			TTransformed Transformer(T instanceToValidate)
+				=> transformer(instanceToValidate, PropertyFunc(instanceToValidate));
+
+			ValidationFunction = context => ValidateInternal(context, Transformer);
+			AsyncValidationFunction = (context, cancel) => ValidateInternalAsync(context, Transformer, cancel);
+			return new TransformedRule<T, TProperty, TTransformed>(this, transformer);
 		}
 	}
 }

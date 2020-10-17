@@ -34,7 +34,7 @@ namespace FluentValidation.Internal {
 	/// </summary>
 	/// <typeparam name="TElement"></typeparam>
 	/// <typeparam name="T"></typeparam>
-	public class CollectionPropertyRule<T, TElement> : PropertyRule<T, IEnumerable<TElement>>, IValidationRule<T, TElement> {
+	public class CollectionPropertyRule<T, TElement> : PropertyRule<T, IEnumerable<TElement>>, IValidationRule<T, TElement>, ITransformable<T, TElement> {
 
 		/// <summary>
 		/// Initializes new instance of the CollectionPropertyRule class
@@ -331,5 +331,13 @@ namespace FluentValidation.Internal {
 			return paramExp.Name;
 		}
 
+		IValidationRule<T, TTransformed> ITransformable<T, TElement>.Transform<TTransformed>(Func<T, TElement, TTransformed> transformer) {
+			TTransformed Transformer(T instance, TElement collectionElement)
+				=> transformer(instance, collectionElement);
+
+			ValidationFunction = context => ValidateCollection(context, Transformer);
+			AsyncValidationFunction = (context, cancel) =>  ValidateCollectionAsync(context, Transformer, cancel);
+			return new TransformedRule<T, TElement, TTransformed>(this, transformer);
+		}
 	}
 }
