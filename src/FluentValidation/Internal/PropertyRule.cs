@@ -414,7 +414,7 @@ namespace FluentValidation.Internal {
 			return validator.Validate(propertyContext);
 		}
 
-		internal async Task<IEnumerable<ValidationFailure>> RunDependentRulesAsync(IValidationContext<T> context, CancellationToken cancellation) {
+		private protected async Task<IEnumerable<ValidationFailure>> RunDependentRulesAsync(IValidationContext<T> context, CancellationToken cancellation) {
 			var failures = new List<ValidationFailure>();
 
 			foreach (var rule in DependentRules) {
