@@ -29,6 +29,7 @@ namespace FluentValidation {
 
 	/// <summary>
 	/// Defines a rule associated with a property which can have multiple validators.
+	/// This interface is used for construction of rules and should not be implemented in your code directly.
 	/// </summary>
 	public interface IValidationRule {
 		/// <summary>
@@ -88,6 +89,7 @@ namespace FluentValidation {
 
 	/// <summary>
 	/// Defines a rule associated with a property which can have multiple validators.
+	/// This interface is used for construction of rules and should not be implemented in your code directly.
 	/// </summary>
 	public interface IValidationRule<T> : IValidationRule {
 
@@ -180,7 +182,29 @@ namespace FluentValidation {
 		IPropertyValidator CurrentValidator { get; }
 	}
 
+	/// <summary>
+	/// Defines a rule associated with a property which can have multiple validators.
+	/// This interface is used for construction of rules and should not be implemented in your code directly.
+	/// </summary>
 	public interface IValidationRule<T, out TProperty> : IValidationRule<T> {
 
+	}
+
+	/// <summary>
+	/// Defines a rule associated with a collection property where each
+	/// element in the collection can have multiple validators.
+	/// This interface is used for construction of rules and should not be implemented in your code directly.
+	/// </summary>
+	public interface ICollectionRule<T, TElement> : IValidationRule<T, TElement> {
+		/// <summary>
+		/// Filter that should include/exclude items in the collection.
+		/// </summary>
+		public Func<TElement, bool> Filter { get; set; }
+
+		/// <summary>
+		/// Constructs the indexer in the property name associated with the error message.
+		/// By default this is "[" + index + "]"
+		/// </summary>
+		public Func<T, IEnumerable<TElement>, TElement, int, string> IndexBuilder { get; set; }
 	}
 }

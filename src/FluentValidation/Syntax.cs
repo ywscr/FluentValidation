@@ -140,7 +140,7 @@ namespace FluentValidation {
 		/// </summary>
 		/// <param name="configurator">Action to configure the object.</param>
 		/// <returns></returns>
-		IRuleBuilderInitialCollection<T, TElement> Configure(Action<CollectionPropertyRule<T, TElement>> configurator);
+		IRuleBuilderInitialCollection<T, TElement> Configure(Action<ICollectionRule<T, TElement>> configurator);
 	}
 
 	/// <summary>

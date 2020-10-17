@@ -108,7 +108,7 @@ namespace FluentValidation.Internal {
 			return this;
 		}
 
-		IRuleBuilderInitialCollection<T, TProperty> IRuleBuilderInitialCollection<T, TProperty>.Configure(Action<CollectionPropertyRule<T, TProperty>> configurator) {
+		IRuleBuilderInitialCollection<T, TProperty> IRuleBuilderInitialCollection<T, TProperty>.Configure(Action<ICollectionRule<T, TProperty>> configurator) {
 			configurator((CollectionPropertyRule<T, TProperty>) Rule);
 			return this;
 		}

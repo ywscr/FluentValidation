@@ -30,7 +30,7 @@ namespace FluentValidation.Internal {
 	/// <summary>
 	/// Defines a rule associated with a property.
 	/// </summary>
-	public class PropertyRule<T, TProperty> : IValidationRule<T, TProperty>, ITransformable<T,TProperty> {
+	internal class PropertyRule<T, TProperty> : IValidationRule<T, TProperty>, ITransformable<T,TProperty> {
 		private readonly List<IPropertyValidator> _validators = new List<IPropertyValidator>();
 		private Func<CascadeMode> _cascadeModeThunk;
 		private string _propertyDisplayName;
@@ -41,8 +41,8 @@ namespace FluentValidation.Internal {
 		private string _displayName;
 		private Func<IValidationContext<T>, string> _displayNameFactory;
 
-		internal Func<IValidationContext<T>, IEnumerable<ValidationFailure>> ValidationFunction { get; set; }
-		internal Func<IValidationContext<T>, CancellationToken, Task<IEnumerable<ValidationFailure>>> AsyncValidationFunction { get; set; }
+		private protected Func<IValidationContext<T>, IEnumerable<ValidationFailure>> ValidationFunction { get; set; }
+		private protected Func<IValidationContext<T>, CancellationToken, Task<IEnumerable<ValidationFailure>>> AsyncValidationFunction { get; set; }
 
 		/// <summary>
 		/// Condition for all validators in this rule.
@@ -278,7 +278,6 @@ namespace FluentValidation.Internal {
 				}
 			}
 
-			// TODO: For FV 9, throw an exception by default if synchronous validator has async condition.
 			if (HasAsyncCondition) {
 				if (! AsyncCondition(context, default).GetAwaiter().GetResult()) {
 					return Enumerable.Empty<ValidationFailure>();
@@ -291,27 +290,20 @@ namespace FluentValidation.Internal {
 
 			// Invoke each validator and collect its results.
 			foreach (var validator in Validators) {
-				IEnumerable<ValidationFailure> results;
-				if (validator.ShouldValidateAsynchronously(context))
-					//TODO: For FV 9 by default disallow invocation of async validators when running synchronously.
-					results = InvokePropertyValidatorAsync(context, validator, propertyName, accessor, default).GetAwaiter().GetResult();
-				else
-					results = InvokePropertyValidator(context, validator, propertyName, accessor);
-
-				bool hasFailure = false;
-
-				foreach (var result in results) {
-					failures.Add(result);
-					hasFailure = true;
+				if (validator.ShouldValidateAsynchronously(context)) {
+					failures.AddRange(InvokePropertyValidatorAsync(context, validator, propertyName, accessor, default).GetAwaiter().GetResult());
+				}
+				else {
+					failures.AddRange(InvokePropertyValidator(context, validator, propertyName, accessor));
 				}
 
 				// If there has been at least one failure, and our CascadeMode has been set to StopOnFirst
 				// then don't continue to the next rule
 #pragma warning disable 618
-				if (hasFailure && (cascade == CascadeMode.StopOnFirstFailure || cascade == CascadeMode.Stop)) {
-#pragma warning restore 618
+				if (failures.Count > 0 && (cascade == CascadeMode.StopOnFirstFailure || cascade == CascadeMode.Stop)) {
 					break;
 				}
+#pragma warning restore 618
 			}
 
 			if (failures.Count > 0) {
@@ -368,26 +360,20 @@ namespace FluentValidation.Internal {
 			foreach (var validator in Validators) {
 				cancellation.ThrowIfCancellationRequested();
 
-				IEnumerable<ValidationFailure> results;
-				if (validator.ShouldValidateAsynchronously(context))
-					results = await InvokePropertyValidatorAsync(context, validator, propertyName, accessor, cancellation);
-				else
-					results = InvokePropertyValidator(context, validator, propertyName, accessor);
-
-				bool hasFailure = false;
-
-				foreach (var result in results) {
-					failures.Add(result);
-					hasFailure = true;
+				if (validator.ShouldValidateAsynchronously(context)) {
+					failures.AddRange(await InvokePropertyValidatorAsync(context, validator, propertyName, accessor, cancellation));
+				}
+				else {
+					failures.AddRange(InvokePropertyValidator(context, validator, propertyName, accessor));
 				}
 
 				// If there has been at least one failure, and our CascadeMode has been set to StopOnFirst
 				// then don't continue to the next rule
 #pragma warning disable 618
-				if (hasFailure && (cascade == CascadeMode.StopOnFirstFailure || cascade == CascadeMode.Stop)) {
-#pragma warning restore 618
+				if (failures.Count > 0 && (cascade == CascadeMode.StopOnFirstFailure || cascade == CascadeMode.Stop)) {
 					break;
 				}
+#pragma warning restore 618
 			}
 
 			if (failures.Count > 0) {
@@ -395,7 +381,10 @@ namespace FluentValidation.Internal {
 				OnFailure?.Invoke(context.InstanceToValidate, failures);
 			}
 			else {
-				failures.AddRange(await RunDependentRulesAsync(context, cancellation));
+				foreach (var dependentRule in DependentRules) {
+					cancellation.ThrowIfCancellationRequested();
+					failures.AddRange(await dependentRule.ValidateAsync(context, cancellation));
+				}
 			}
 
 			return failures;
@@ -412,17 +401,6 @@ namespace FluentValidation.Internal {
 			if (!validator.Options.InvokeCondition(context)) return Enumerable.Empty<ValidationFailure>();
 			var propertyContext = new PropertyValidatorContext(context, this, propertyName, accessor.Value);
 			return validator.Validate(propertyContext);
-		}
-
-		private protected async Task<IEnumerable<ValidationFailure>> RunDependentRulesAsync(IValidationContext<T> context, CancellationToken cancellation) {
-			var failures = new List<ValidationFailure>();
-
-			foreach (var rule in DependentRules) {
-				cancellation.ThrowIfCancellationRequested();
-				failures.AddRange(await rule.ValidateAsync(context, cancellation));
-			}
-
-			return failures;
 		}
 
 		/// <summary>
@@ -487,7 +465,6 @@ namespace FluentValidation.Internal {
 				var original = _asyncCondition;
 				_asyncCondition = async (ctx, ct) => await condition(ctx, ct) && await original(ctx, ct);
 			}
-
 		}
 
 		IValidationRule<T, TTransformed> ITransformable<T, TProperty>.Transform<TTransformed>(Func<T, TProperty, TTransformed> transformer) {

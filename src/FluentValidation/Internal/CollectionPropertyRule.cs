@@ -34,7 +34,7 @@ namespace FluentValidation.Internal {
 	/// </summary>
 	/// <typeparam name="TElement"></typeparam>
 	/// <typeparam name="T"></typeparam>
-	public class CollectionPropertyRule<T, TElement> : PropertyRule<T, IEnumerable<TElement>>, IValidationRule<T, TElement>, ITransformable<T, TElement> {
+	internal class CollectionPropertyRule<T, TElement> : PropertyRule<T, IEnumerable<TElement>>, ICollectionRule<T, TElement>, ITransformable<T, TElement> {
 
 		/// <summary>
 		/// Initializes new instance of the CollectionPropertyRule class
@@ -289,7 +289,10 @@ namespace FluentValidation.Internal {
 				OnFailure?.Invoke(context.InstanceToValidate, failures);
 			}
 			else {
-				failures.AddRange(await RunDependentRulesAsync(context, cancellation));
+				foreach (var dependentRule in DependentRules) {
+					cancellation.ThrowIfCancellationRequested();
+					failures.AddRange(await dependentRule.ValidateAsync(context, cancellation));
+				}
 			}
 
 			return failures;

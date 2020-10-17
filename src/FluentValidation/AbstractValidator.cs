@@ -212,6 +212,9 @@ namespace FluentValidation {
 		/// <returns>An IRuleBuilder instance on which validators can be defined</returns>
 		public IRuleBuilderInitialCollection<T, TElement> RuleForEach<TElement>(Expression<Func<T, IEnumerable<TElement>>> expression) {
 			expression.Guard("Cannot pass null to RuleForEach", nameof(expression));
+
+
+
 			var rule = CollectionPropertyRule<T, TElement>.Create(expression, () => CascadeMode);
 			AddRule(rule);
 			var ruleBuilder = new RuleBuilder<T, TElement>(rule, this);

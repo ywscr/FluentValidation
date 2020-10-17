@@ -20,6 +20,7 @@ namespace FluentValidation.Tests {
 	using System;
 	using System.Collections.Generic;
 	using System.Linq;
+	using System.Reflection;
 	using System.Threading;
 	using System.Threading.Tasks;
 	using Internal;
@@ -48,7 +49,12 @@ namespace FluentValidation.Tests {
 		[Fact]
 		public void Should_compile_expression() {
 			var person = new Person {Surname = "Foo"};
-			((PropertyRule<Person, string>)_rule).PropertyFunc(person).ShouldEqual("Foo");
+
+			// Reflection hack as PropertyRule is internal as of 10.0
+			var accessor = (Func<Person,string>)_rule.GetType().GetProperty("PropertyFunc", BindingFlags.Instance | BindingFlags.Public)
+				.GetValue(_rule);
+
+			accessor(person).ShouldEqual("Foo");
 		}
 
 		[Fact]
