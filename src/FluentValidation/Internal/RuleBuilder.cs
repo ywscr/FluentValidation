@@ -52,7 +52,7 @@ namespace FluentValidation.Internal {
 		/// <param name="validator">The validator to set</param>
 		/// <returns></returns>
 		public IRuleBuilderOptions<T, TProperty> SetValidator(IPropertyValidator validator) {
-			validator.Guard("Cannot pass a null validator to SetValidator.", nameof(validator));
+			if (validator == null) throw new ArgumentNullException(nameof(validator), "Cannot pass a null validator to SetValidator.");
 			Rule.AddValidator(validator);
 			return this;
 		}
@@ -63,7 +63,7 @@ namespace FluentValidation.Internal {
 		/// <param name="validator">The validator to set</param>
 		/// <param name="ruleSets"></param>
 		public IRuleBuilderOptions<T, TProperty> SetValidator(IValidator<TProperty> validator, params string[] ruleSets) {
-			validator.Guard("Cannot pass a null validator to SetValidator", nameof(validator));
+			if (validator == null) throw new ArgumentNullException(nameof(validator), "Cannot pass a null validator to SetValidator");
 			var adaptor = new ChildValidatorAdaptor<T,TProperty>(validator, validator.GetType()) {
 				RuleSets = ruleSets
 			};
@@ -78,7 +78,7 @@ namespace FluentValidation.Internal {
 		/// <param name="ruleSets"></param>
 		public IRuleBuilderOptions<T, TProperty> SetValidator<TValidator>(Func<T, TValidator> validatorProvider, params string[] ruleSets)
 			where TValidator : IValidator<TProperty> {
-			validatorProvider.Guard("Cannot pass a null validatorProvider to SetValidator", nameof(validatorProvider));
+			if (validatorProvider == null) throw new ArgumentNullException(nameof(validatorProvider), "Cannot pass a null validatorProvider to SetValidator");
 			SetValidator(new ChildValidatorAdaptor<T,TProperty>(context => validatorProvider((T) context.InstanceToValidate), typeof (TValidator)) {
 				RuleSets = ruleSets
 			});
@@ -91,7 +91,7 @@ namespace FluentValidation.Internal {
 		/// <param name="validatorProvider">The validator provider to use</param>
 		/// <param name="ruleSets"></param>
 		public IRuleBuilderOptions<T, TProperty> SetValidator<TValidator>(Func<T, TProperty, TValidator> validatorProvider, params string[] ruleSets) where TValidator : IValidator<TProperty> {
-			validatorProvider.Guard("Cannot pass a null validatorProvider to SetValidator", nameof(validatorProvider));
+			if (validatorProvider == null) throw new ArgumentNullException(nameof(validatorProvider), "Cannot pass a null validatorProvider to SetValidator");
 			SetValidator(new ChildValidatorAdaptor<T,TProperty>(context => validatorProvider((T) context.InstanceToValidate, (TProperty) context.PropertyValue), typeof (TValidator)) {
 				RuleSets = ruleSets
 			});

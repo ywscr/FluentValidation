@@ -33,8 +33,7 @@ namespace FluentValidation.Validators {
 		/// </summary>
 		/// <param name="value"></param>
 		protected AbstractComparisonValidator(IComparable value) {
-			value.Guard("value must not be null.", nameof(value));
-			ValueToCompare = value;
+			ValueToCompare = value ?? throw new ArgumentNullException(nameof(value));
 		}
 
 		/// <summary>

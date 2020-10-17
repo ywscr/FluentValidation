@@ -17,6 +17,7 @@
 #endregion
 
 namespace FluentValidation.Validators {
+	using System;
 	using Internal;
 	using Resources;
 
@@ -26,8 +27,7 @@ namespace FluentValidation.Validators {
 		private readonly Predicate _predicate;
 
 		public PredicateValidator(Predicate predicate) {
-			predicate.Guard("A predicate must be specified.", nameof(predicate));
-			this._predicate = predicate;
+			_predicate = predicate ?? throw new ArgumentNullException(nameof(predicate));
 		}
 
 		protected override bool IsValid(PropertyValidatorContext context) {

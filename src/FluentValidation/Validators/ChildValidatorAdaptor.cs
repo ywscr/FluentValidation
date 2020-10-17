@@ -89,8 +89,7 @@ namespace FluentValidation.Validators {
 		}
 
 		public virtual IValidator GetValidator(PropertyValidatorContext context) {
-			context.Guard("Cannot pass a null context to GetValidator", nameof(context));
-
+			if (context == null) throw new ArgumentNullException(nameof(context));
 			return _validatorProvider != null ? _validatorProvider(context) : _validator;
 		}
 

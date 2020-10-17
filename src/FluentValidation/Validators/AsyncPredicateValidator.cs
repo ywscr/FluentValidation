@@ -34,8 +34,7 @@ namespace FluentValidation.Validators {
 		/// </summary>
 		/// <param name="predicate"></param>
 		public AsyncPredicateValidator(Func<object, object, PropertyValidatorContext, CancellationToken, Task<bool>> predicate) {
-			predicate.Guard("A predicate must be specified.", nameof(predicate));
-			this._predicate = predicate;
+			_predicate = predicate ?? throw new ArgumentNullException(nameof(predicate));
 		}
 
 		protected override Task<bool> IsValidAsync(PropertyValidatorContext context, CancellationToken cancellation) {

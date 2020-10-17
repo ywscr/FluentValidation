@@ -44,12 +44,12 @@ namespace FluentValidation {
 		}
 
 		ValidationResult IValidator.Validate(IValidationContext context) {
-			context.Guard("Cannot pass null to Validate", nameof(context));
+			if (context == null) throw new ArgumentNullException(nameof(context));
 			return Validate(ValidationContext<T>.GetFromNonGenericContext(context));
 		}
 
 		Task<ValidationResult> IValidator.ValidateAsync(IValidationContext context, CancellationToken cancellation) {
-			context.Guard("Cannot pass null to Validate", nameof(context));
+			if (context == null) throw new ArgumentNullException(nameof(context));
 			return ValidateAsync(ValidationContext<T>.GetFromNonGenericContext(context), cancellation);
 		}
 
@@ -78,7 +78,7 @@ namespace FluentValidation {
 		/// <param name="context">Validation Context</param>
 		/// <returns>A ValidationResult object containing any validation failures.</returns>
 		public virtual ValidationResult Validate(ValidationContext<T> context) {
-			context.Guard("Cannot pass null to Validate.", nameof(context));
+			if (context == null) throw new ArgumentNullException(nameof(context));
 
 			var result = new ValidationResult();
 			bool shouldContinue = PreValidate(context, result);
@@ -121,7 +121,7 @@ namespace FluentValidation {
 		/// <param name="cancellation">Cancellation token</param>
 		/// <returns>A ValidationResult object containing any validation failures.</returns>
 		public async virtual Task<ValidationResult> ValidateAsync(ValidationContext<T> context, CancellationToken cancellation = new CancellationToken()) {
-			context.Guard("Cannot pass null to Validate", nameof(context));
+			if (context == null) throw new ArgumentNullException(nameof(context));
 			context.RootContextData["__FV_IsAsyncExecution"] = true;
 
 			var result = new ValidationResult();
@@ -195,7 +195,7 @@ namespace FluentValidation {
 		/// <param name="expression">The expression representing the property to validate</param>
 		/// <returns>an IRuleBuilder instance on which validators can be defined</returns>
 		public IRuleBuilderInitial<T, TProperty> RuleFor<TProperty>(Expression<Func<T, TProperty>> expression) {
-			expression.Guard("Cannot pass null to RuleFor", nameof(expression));
+			if (expression == null) throw new ArgumentNullException(nameof(expression));
 			// If rule-level caching is enabled, then bypass the expression-level cache.
 			// Otherwise we essentially end up caching expressions twice unnecessarily.
 			var rule = PropertyRule<T, TProperty>.Create(expression, () => CascadeMode);
@@ -211,10 +211,7 @@ namespace FluentValidation {
 		/// <param name="expression">Expression representing the collection to validate</param>
 		/// <returns>An IRuleBuilder instance on which validators can be defined</returns>
 		public IRuleBuilderInitialCollection<T, TElement> RuleForEach<TElement>(Expression<Func<T, IEnumerable<TElement>>> expression) {
-			expression.Guard("Cannot pass null to RuleForEach", nameof(expression));
-
-
-
+			if (expression == null) throw new ArgumentNullException(nameof(expression));
 			var rule = CollectionPropertyRule<T, TElement>.Create(expression, () => CascadeMode);
 			AddRule(rule);
 			var ruleBuilder = new RuleBuilder<T, TElement>(rule, this);
@@ -227,8 +224,8 @@ namespace FluentValidation {
 		/// <param name="ruleSetName">The name of the ruleset.</param>
 		/// <param name="action">Action that encapsulates the rules in the ruleset.</param>
 		public void RuleSet(string ruleSetName, Action action) {
-			ruleSetName.Guard("A name must be specified when calling RuleSet.", nameof(ruleSetName));
-			action.Guard("A ruleset definition must be specified when calling RuleSet.", nameof(action));
+			if (action == null) throw new ArgumentNullException(nameof(action), "A ruleset definition must be specified when calling RuleSet.");
+			if (string.IsNullOrEmpty(ruleSetName)) throw new ArgumentException("A name must be specified when calling RuleSet.", nameof(ruleSetName));
 
 			var ruleSetNames = ruleSetName.Split(',', ';')
 				.Select(x => x.Trim())
@@ -319,7 +316,7 @@ namespace FluentValidation {
 		/// Includes the rules from the specified validator
 		/// </summary>
 		public void Include(IValidator<T> rulesToInclude) {
-			rulesToInclude.Guard("Cannot pass null to Include", nameof(rulesToInclude));
+			if (rulesToInclude == null) throw new ArgumentNullException(nameof(rulesToInclude), "Cannot pass null to Include");
 			var rule = IncludeRule<T>.Create(rulesToInclude, () => CascadeMode);
 			AddRule(rule);
 		}
@@ -328,7 +325,7 @@ namespace FluentValidation {
 		/// Includes the rules from the specified validator
 		/// </summary>
 		public void Include<TValidator>(Func<T, TValidator> rulesToInclude) where TValidator : IValidator<T> {
-			rulesToInclude.Guard("Cannot pass null to Include", nameof(rulesToInclude));
+			if (rulesToInclude == null) throw new ArgumentNullException(nameof(rulesToInclude), "Cannot pass null to Include");
 			var rule = IncludeRule<T>.Create(rulesToInclude, () => CascadeMode);
 			AddRule(rule);
 		}
@@ -353,7 +350,8 @@ namespace FluentValidation {
 		/// </summary>
 		/// <param name="instanceToValidate"></param>
 		protected virtual void EnsureInstanceNotNull(object instanceToValidate) {
-			instanceToValidate.Guard("Cannot pass null model to Validate.", nameof(instanceToValidate));
+			if (instanceToValidate == null)
+				throw new ArgumentNullException(nameof(instanceToValidate), "Cannot pass null model to Validate.");
 		}
 
 		/// <summary>

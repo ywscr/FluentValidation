@@ -78,7 +78,7 @@
 		/// <param name="propertyName">The property name</param>
 		/// <param name="errorMessage">The error message</param>
 		public void AddFailure(string propertyName, string errorMessage) {
-			errorMessage.Guard("An error message must be specified when calling AddFailure.", nameof(errorMessage));
+			if (errorMessage == null) throw new ArgumentNullException(nameof(errorMessage), "An error message must be specified when calling AddFailure.");
 			AddFailure(new ValidationFailure(propertyName ?? string.Empty, errorMessage));
 		}
 
@@ -87,7 +87,7 @@
 		/// </summary>
 		/// <param name="errorMessage">The error message</param>
 		public void AddFailure(string errorMessage) {
-			errorMessage.Guard("An error message must be specified when calling AddFailure.", nameof(errorMessage));
+			if (errorMessage == null) throw new ArgumentNullException(nameof(errorMessage), "An error message must be specified when calling AddFailure.");
 			AddFailure(_context.PropertyName, errorMessage);
 		}
 
@@ -96,7 +96,7 @@
 		/// </summary>
 		/// <param name="failure">The failure to add</param>
 		public void AddFailure(ValidationFailure failure) {
-			failure.Guard("A failure must be specified when calling AddFailure.", nameof(failure));
+			if (failure == null) throw new ArgumentNullException(nameof(failure));
 			_failures.Add(failure);
 		}
 
