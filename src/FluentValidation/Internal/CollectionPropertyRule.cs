@@ -21,8 +21,10 @@
 namespace FluentValidation.Internal {
 	using System;
 	using System.Collections.Generic;
+	using System.Linq;
 	using System.Linq.Expressions;
 	using System.Reflection;
+	using Validators;
 
 	/// <summary>
 	/// Rule definition for collection properties
@@ -73,6 +75,9 @@ namespace FluentValidation.Internal {
 			Executor = new CollectionRuleExecutor<T, TElement, TTransformed>(this, Transformer);
 			return new TransformedRule<T, TElement, TTransformed>(this, transformer);
 		}
+
+		public new IPropertyValidator<T,TElement> CurrentValidator
+			=> (IPropertyValidator<T, TElement>) Validators.LastOrDefault();
 	}
 
 }

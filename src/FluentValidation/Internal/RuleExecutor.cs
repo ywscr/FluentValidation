@@ -70,7 +70,7 @@ namespace FluentValidation.Internal {
 			var accessor = new Lazy<TValue>(() => _propertyValueAccessor(context.InstanceToValidate), LazyThreadSafetyMode.None);
 
 			// Invoke each validator and collect its results.
-			foreach (var validator in _rule.Validators) {
+			foreach (IPropertyValidator<T,TValue> validator in _rule.Validators) {
 				if (validator.ShouldValidateAsynchronously(context)) {
 					failures.AddRange(InvokePropertyValidatorAsync(context, validator, propertyName, accessor, default).GetAwaiter().GetResult());
 				}
@@ -139,7 +139,7 @@ namespace FluentValidation.Internal {
 			var accessor = new Lazy<TValue>(() => _propertyValueAccessor(context.InstanceToValidate), LazyThreadSafetyMode.None);
 
 			// Invoke each validator and collect its results.
-			foreach (var validator in _rule.Validators) {
+			foreach (IPropertyValidator<T,TValue> validator in _rule.Validators) {
 				cancellation.ThrowIfCancellationRequested();
 
 				if (validator.ShouldValidateAsynchronously(context)) {
@@ -176,7 +176,7 @@ namespace FluentValidation.Internal {
 			// Default behaviour for When/Unless as of v1.3 is to apply the condition to all previous validators in the chain.
 			// TODO: Remove the currying once PropertyValidators are generic.
 			if (applyConditionTo == ApplyConditionTo.AllValidators) {
-				foreach (var validator in _rule.Validators) {
+				foreach (var validator in _rule.Validators.Cast<IPropertyValidator<T,TValue>>()) {
 					validator.Options.ApplyCondition(ctx=> predicate(ValidationContext<T>.GetFromNonGenericContext(ctx)));
 				}
 
@@ -185,7 +185,10 @@ namespace FluentValidation.Internal {
 				}
 			}
 			else {
-				_rule.CurrentValidator.Options.ApplyCondition(ctx=> predicate(ValidationContext<T>.GetFromNonGenericContext(ctx)));
+				_rule.Validators.Cast<IPropertyValidator<T,TProperty>>()
+					.Last()
+					.Options
+					.ApplyCondition(ctx=> predicate(ValidationContext<T>.GetFromNonGenericContext(ctx)));
 			}
 		}
 
@@ -193,7 +196,7 @@ namespace FluentValidation.Internal {
 			// Default behaviour for When/Unless as of v1.3 is to apply the condition to all previous validators in the chain.
 			// TODO: Remove the currying once PropertyValidators are generic.
 			if (applyConditionTo == ApplyConditionTo.AllValidators) {
-				foreach (var validator in _rule.Validators) {
+				foreach (var validator in _rule.Validators.Cast<IPropertyValidator<T,TValue>>()) {
 					validator.Options.ApplyAsyncCondition((ctx, c) => predicate(ValidationContext<T>.GetFromNonGenericContext(ctx), c));
 				}
 
@@ -202,21 +205,24 @@ namespace FluentValidation.Internal {
 				}
 			}
 			else {
-				_rule.CurrentValidator.Options.ApplyAsyncCondition((ctx, c) => predicate(ValidationContext<T>.GetFromNonGenericContext(ctx), c));
+				_rule.Validators.Cast<IPropertyValidator<T,TProperty>>()
+					.Last()
+					.Options
+					.ApplyAsyncCondition((ctx, c) => predicate(ValidationContext<T>.GetFromNonGenericContext(ctx), c));
 			}
 
 		}
 
-		private async Task<IEnumerable<ValidationFailure>> InvokePropertyValidatorAsync(IValidationContext<T> context, IPropertyValidator validator, string propertyName, Lazy<TValue> accessor, CancellationToken cancellation) {
+		private async Task<IEnumerable<ValidationFailure>> InvokePropertyValidatorAsync(IValidationContext<T> context, IPropertyValidator<T,TValue> validator, string propertyName, Lazy<TValue> accessor, CancellationToken cancellation) {
 			if (!validator.Options.InvokeCondition(context)) return Enumerable.Empty<ValidationFailure>();
 			if (!await validator.Options.InvokeAsyncCondition(context, cancellation)) return Enumerable.Empty<ValidationFailure>();
-			var propertyContext = new PropertyValidatorContext(context, _rule, propertyName, accessor.Value);
+			var propertyContext = new PropertyValidatorContext<T,TValue>(context, _rule, propertyName, accessor);
 			return await validator.ValidateAsync(propertyContext, cancellation);
 		}
 
-		private IEnumerable<ValidationFailure> InvokePropertyValidator(IValidationContext<T> context, IPropertyValidator validator, string propertyName, Lazy<TValue> accessor) {
+		private IEnumerable<ValidationFailure> InvokePropertyValidator(IValidationContext<T> context, IPropertyValidator<T,TValue> validator, string propertyName, Lazy<TValue> accessor) {
 			if (!validator.Options.InvokeCondition(context)) return Enumerable.Empty<ValidationFailure>();
-			var propertyContext = new PropertyValidatorContext(context, _rule, propertyName, accessor.Value);
+			var propertyContext = new PropertyValidatorContext<T, TValue>(context, _rule, propertyName, accessor);
 			return validator.Validate(propertyContext);
 		}
 

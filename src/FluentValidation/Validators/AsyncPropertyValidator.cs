@@ -27,24 +27,19 @@ namespace FluentValidation.Validators {
 	/// <summary>
 	/// Defines a property validator that can be run asynchronously.
 	/// </summary>
-	public abstract class AsyncValidatorBase : PropertyValidator {
-		public override bool ShouldValidateAsynchronously(IValidationContext context) {
-			return context.IsAsync() || HasAsyncCondition;
-		}
-		
-		protected AsyncValidatorBase(string errorMessage)
+	public abstract class AsyncPropertyValidator<T,TProperty> : PropertyValidator<T,TProperty> {
+		protected AsyncPropertyValidator(string errorMessage)
 			: base(errorMessage) {
 		}
 
-		protected AsyncValidatorBase() {
+		protected AsyncPropertyValidator() { }
 
-		}
+		public sealed override bool ShouldValidateAsynchronously(IValidationContext context)
+			=> true;
 
-		protected override bool IsValid(PropertyValidatorContext context) {
-			//TODO: For FV 9, throw an exception by default if async validator is being executed synchronously.
-			return Task.Run(() => IsValidAsync(context, new CancellationToken())).GetAwaiter().GetResult();
-		}
+		protected sealed override bool IsValid(PropertyValidatorContext<T,TProperty> context)
+			=> throw new NotSupportedException($"Async validator {GetType().Name} cannot be invoked synchronously.");
 
-		protected abstract override Task<bool> IsValidAsync(PropertyValidatorContext context, CancellationToken cancellation);
+		protected abstract override Task<bool> IsValidAsync(PropertyValidatorContext<T,TProperty> context, CancellationToken cancellation);
 	}
 }

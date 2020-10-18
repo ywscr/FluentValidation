@@ -4,9 +4,9 @@
 	using Validators;
 
 	public class MessageBuilderContext {
-		private PropertyValidatorContext _innerContext;
+		private IPropertyValidatorContext _innerContext;
 
-		public MessageBuilderContext(PropertyValidatorContext innerContext, IPropertyValidator propertyValidator) {
+		public MessageBuilderContext(IPropertyValidatorContext innerContext, IPropertyValidator propertyValidator) {
 			_innerContext = innerContext;
 			PropertyValidator = propertyValidator;
 		}
@@ -27,10 +27,7 @@
 		public object PropertyValue => _innerContext.PropertyValue;
 
 		public string GetDefaultMessage() {
-			return PropertyValidator.Options.GetErrorMessage(_innerContext);
-		}
-		public static implicit operator PropertyValidatorContext(MessageBuilderContext ctx) {
-			return ctx._innerContext;
+			return PropertyValidator.GetErrorMessage(_innerContext);
 		}
 	}
 }

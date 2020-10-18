@@ -175,19 +175,17 @@ namespace FluentValidation {
 		/// Clear all validators from this rule.
 		/// </summary>
 		void ClearValidators();
-
-		/// <summary>
-		/// The current validator being configured by this rule.
-		/// </summary>
-		IPropertyValidator CurrentValidator { get; }
 	}
 
 	/// <summary>
 	/// Defines a rule associated with a property which can have multiple validators.
 	/// This interface is used for construction of rules and should not be implemented in your code directly.
 	/// </summary>
-	public interface IValidationRule<T, out TProperty> : IValidationRule<T> {
-
+	public interface IValidationRule<T, TProperty> : IValidationRule<T> {
+		/// <summary>
+		/// The current validator being configured by this rule.
+		/// </summary>
+		IPropertyValidator<T,TProperty> CurrentValidator { get; }
 	}
 
 	/// <summary>

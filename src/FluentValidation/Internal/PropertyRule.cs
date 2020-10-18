@@ -103,7 +103,8 @@ namespace FluentValidation.Internal {
 		/// <summary>
 		/// The current validator being configured by this rule.
 		/// </summary>
-		public IPropertyValidator CurrentValidator => _validators.LastOrDefault();
+		public IPropertyValidator<T,TProperty> CurrentValidator
+			=> (IPropertyValidator<T, TProperty>) _validators.LastOrDefault();
 
 		/// <summary>
 		/// Type of the property being validated

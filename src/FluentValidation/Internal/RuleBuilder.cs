@@ -98,21 +98,6 @@ namespace FluentValidation.Internal {
 			return this;
 		}
 
-		IRuleBuilderInitial<T, TProperty> IRuleBuilderInitial<T, TProperty>.Configure(Action<IValidationRule<T, TProperty>> configurator) {
-			configurator(Rule);
-			return this;
-		}
-
-		IRuleBuilderOptions<T, TProperty> IRuleBuilderOptions<T, TProperty>.Configure(Action<IValidationRule<T, TProperty>> configurator) {
-			configurator(Rule);
-			return this;
-		}
-
-		IRuleBuilderInitialCollection<T, TProperty> IRuleBuilderInitialCollection<T, TProperty>.Configure(Action<ICollectionRule<T, TProperty>> configurator) {
-			configurator((CollectionPropertyRule<T, TProperty>) Rule);
-			return this;
-		}
-
 		public IRuleBuilderInitial<T, TTransformed> Transform<TTransformed>(Func<TProperty, TTransformed> transformer) {
 			if (transformer == null) throw new ArgumentNullException(nameof(transformer));
 			if (Rule is ITransformable<T, TProperty> t) {

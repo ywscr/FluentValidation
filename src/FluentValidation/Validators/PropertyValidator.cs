@@ -23,20 +23,257 @@ namespace FluentValidation.Validators {
 	using System.Threading;
 	using System.Threading.Tasks;
 	using Internal;
-	using Resources;
 	using Results;
 
-	public abstract class PropertyValidator : PropertyValidatorOptions, IPropertyValidator {
+	/*internal class LegacyValidatorWrapper<T, TProperty> : IPropertyValidator<T, TProperty> {
+		private PropertyValidator _inner;
+
+		public LegacyValidatorWrapper(PropertyValidator inner) {
+			_inner = inner;
+		}
+
+		public bool ShouldValidateAsynchronously(IValidationContext context) {
+			return _inner.ShouldValidateAsynchronously(context);
+		}
+
+		public IEnumerable<ValidationFailure> Validate(PropertyValidatorContext<T, TProperty> context) {
+			return _inner.Validate(PropertyValidatorContext.Create(context));
+		}
+
+		public Task<IEnumerable<ValidationFailure>> ValidateAsync(PropertyValidatorContext<T, TProperty> context, CancellationToken cancellation) {
+			return _inner.ValidateAsync(PropertyValidatorContext.Create(context), cancellation);
+		}
+
+		public bool HasCondition => _inner.HasCondition;
+
+		public bool HasAsyncCondition => _inner.HasAsyncCondition;
+
+		public void ApplyCondition(Func<IValidationContext<T>, bool> condition) {
+			_inner.ApplyCondition(context => {
+				return condition((IValidationContext<T>) context);
+			});
+		}
+
+		public void ApplyAsyncCondition(Func<IValidationContext<T>, CancellationToken, Task<bool>> condition) {
+			_inner.ApplyAsyncCondition((context, cancel) => {
+				return condition((IValidationContext<T>) context.ParentContext, cancel);
+			});
+		}
+
+		private Func<PropertyValidatorContext<T, TProperty>, object> _realStateProvider;
+
+		public Func<PropertyValidatorContext<T, TProperty>, object> CustomStateProvider {
+			get => _realStateProvider;
+			set {
+				_realStateProvider = value;
+				_inner.CustomStateProvider = context => {
+					return _realSeverityProvider(((PropertyValidatorContext) context).ToGeneric<T, TProperty>());
+				};
+			}
+		}
+
+		private Func<PropertyValidatorContext<T, TProperty>, Severity> _realSeverityProvider;
+
+		public Func<PropertyValidatorContext<T, TProperty>, Severity> SeverityProvider {
+			get => _realSeverityProvider;
+			set {
+				_realSeverityProvider = value;
+				_inner.SeverityProvider = context => {
+					return _realSeverityProvider(((PropertyValidatorContext) context).ToGeneric<T, TProperty>());
+				};
+			}
+		}
+
+		public string ErrorCode {
+			get => _inner.ErrorCode;
+			set => _inner.ErrorCode = value;
+		}
+
+		public string GetErrorMessage(PropertyValidatorContext<T, TProperty> context) {
+			return _inner.GetErrorMessage(PropertyValidatorContext.Create(context));
+		}
+
+		public void SetErrorMessage(Func<PropertyValidatorContext<T, TProperty>, string> errorFactory) {
+			_inner.SetErrorMessage(context => {
+				return errorFactory(((PropertyValidatorContext) context).ToGeneric<T, TProperty>());
+			});
+		}
+
+		public void SetErrorMessage(string errorMessage) {
+			_inner.SetErrorMessage(errorMessage);
+		}
+
+		public IPropertyValidator<T, TProperty> Options => this;
+		public bool InvokeCondition(IValidationContext<T> context) {
+			return _inner.InvokeCondition(context);
+		}
+
+		public Task<bool> InvokeAsyncCondition(IValidationContext<T> context, CancellationToken token) {
+			return _inner.InvokeAsyncCondition(context);
+		}
+	}
+
+	public abstract class PropertyValidator : PropertyValidator<object, object> {
+		public PropertyValidator(string errorMessage) : base(errorMessage) {
+		}
+
+		public PropertyValidator() {
+		}
+
+		protected sealed override bool IsValid(PropertyValidatorContext<object, object> context) {
+			return IsValid((PropertyValidatorContext)context);
+		}
+
+		protected sealed override Task<bool> IsValidAsync(PropertyValidatorContext<object, object> context, CancellationToken cancellation) {
+			return IsValidAsync((PropertyValidatorContext)context, cancellation);
+		}
+
+		protected abstract bool IsValid(PropertyValidatorContext context);
+
+		protected virtual Task<bool> IsValidAsync(PropertyValidatorContext context, CancellationToken cancellation) {
+			return Task.FromResult(IsValid(context));
+		}
+
+		public bool InvokeCondition(IValidationContext context) {
+			if (_condition != null) {
+				return _condition(context);
+			}
+
+			return true;
+		}
+
+		public async Task<bool> InvokeAsyncCondition(IValidationContext context, CancellationToken token) {
+			if (_asyncCondition != null) {
+				return await _asyncCondition(context, token);
+			}
+
+			return true;
+		}
+	}*/
+
+	public abstract class PropertyValidator<T,TProperty> : IPropertyValidator<T,TProperty> {
+		private string _errorMessage;
+		private Func<PropertyValidatorContext<T,TProperty>, string> _errorMessageFactory;
+		private Func<IValidationContext<T>, bool> _condition;
+		private Func<IValidationContext<T>, CancellationToken, Task<bool>> _asyncCondition;
 
 		/// <inheritdoc />
-		//TODO: For FV 10 make this an explicit implementation.
-		public PropertyValidatorOptions Options => this;
+		IPropertyValidator<T,TProperty> IPropertyValidator<T, TProperty>.Options => this;
 
 		protected PropertyValidator(string errorMessage) {
 			SetErrorMessage(errorMessage);
 		}
 
 		protected PropertyValidator() {
+		}
+
+		/// <summary>
+		/// Whether or not this validator has a condition associated with it.
+		/// </summary>
+		public bool HasCondition => _condition != null;
+
+		/// <summary>
+		/// Whether or not this validator has an async condition associated with it.
+		/// </summary>
+		public bool HasAsyncCondition => _asyncCondition != null;
+
+		/// <summary>
+		/// Adds a condition for this validator. If there's already a condition, they're combined together with an AND.
+		/// </summary>
+		/// <param name="condition"></param>
+		public void ApplyCondition(Func<IValidationContext<T>, bool> condition) {
+			if (_condition == null) {
+				_condition = condition;
+			}
+			else {
+				var original = _condition;
+				_condition = ctx => condition(ctx) && original(ctx);
+			}
+		}
+
+		/// <summary>
+		/// Adds a condition for this validator. If there's already a condition, they're combined together with an AND.
+		/// </summary>
+		/// <param name="condition"></param>
+		public void ApplyAsyncCondition(Func<IValidationContext<T>, CancellationToken, Task<bool>> condition) {
+			if (_asyncCondition == null) {
+				_asyncCondition = condition;
+			}
+			else {
+				var original = _asyncCondition;
+				_asyncCondition = async (ctx, ct) => await condition(ctx, ct) && await original(ctx, ct);
+			}
+		}
+
+		public bool InvokeCondition(IValidationContext<T> context) {
+			if (_condition != null) {
+				return _condition(context);
+			}
+
+			return true;
+		}
+
+		public async Task<bool> InvokeAsyncCondition(IValidationContext<T> context, CancellationToken token) {
+			if (_asyncCondition != null) {
+				return await _asyncCondition(context, token);
+			}
+
+			return true;
+		}
+
+		/// <summary>
+		/// Function used to retrieve custom state for the validator
+		/// </summary>
+		public Func<PropertyValidatorContext<T,TProperty>, object> CustomStateProvider { get; set; }
+
+		/// <summary>
+		/// Function used to retrieve the severity for the validator
+		/// </summary>
+		public Func<PropertyValidatorContext<T,TProperty>, Severity> SeverityProvider { get; set; }
+
+		/// <summary>
+		/// Retrieves the error code.
+		/// </summary>
+		public string ErrorCode { get; set; }
+
+		/// <summary>
+		/// Returns the default error message template for this validator, when not overridden.
+		/// </summary>
+		/// <returns></returns>
+		protected virtual string GetDefaultMessageTemplate() => "No default error message has been specified";
+
+		/// <summary>
+		/// Gets the error message. If a context is supplied, it will be used to format the message if it has placeholders.
+		/// If no context is supplied, the raw unformatted message will be returned, containing placeholders.
+		/// </summary>
+		/// <param name="context">The current property validator context.</param>
+		/// <returns>Either the formatted or unformatted error message.</returns>
+		public string GetErrorMessage(IPropertyValidatorContext context) {
+			string rawTemplate = _errorMessageFactory?.Invoke(context as PropertyValidatorContext<T, TProperty>) ?? _errorMessage ?? GetDefaultMessageTemplate();
+
+			if (context == null) {
+				return rawTemplate;
+			}
+
+			return context.MessageFormatter.BuildMessage(rawTemplate);
+		}
+
+		/// <summary>
+		/// Sets the overridden error message template for this validator.
+		/// </summary>
+		/// <param name="errorFactory">A function for retrieving the error message template.</param>
+		public void SetErrorMessage(Func<PropertyValidatorContext<T,TProperty>, string> errorFactory) {
+			_errorMessageFactory = errorFactory;
+			_errorMessage = null;
+		}
+
+		/// <summary>
+		/// Sets the overridden error message template for this validator.
+		/// </summary>
+		/// <param name="errorMessage">The error message to set</param>
+		public void SetErrorMessage(string errorMessage) {
+			_errorMessage = errorMessage;
+			_errorMessageFactory = null;
 		}
 
 		/// <summary>
@@ -63,7 +300,7 @@ namespace FluentValidation.Validators {
 
 
 		/// <inheritdoc />
-		public virtual IEnumerable<ValidationFailure> Validate(PropertyValidatorContext context) {
+		public virtual IEnumerable<ValidationFailure> Validate(PropertyValidatorContext<T,TProperty> context) {
 			if (IsValid(context)) return Enumerable.Empty<ValidationFailure>();
 
 			PrepareMessageFormatterForValidationError(context);
@@ -72,7 +309,7 @@ namespace FluentValidation.Validators {
 		}
 
 		/// <inheritdoc />
-		public virtual async Task<IEnumerable<ValidationFailure>> ValidateAsync(PropertyValidatorContext context, CancellationToken cancellation) {
+		public virtual async Task<IEnumerable<ValidationFailure>> ValidateAsync(PropertyValidatorContext<T,TProperty> context, CancellationToken cancellation) {
 			if (await IsValidAsync(context, cancellation)) return Enumerable.Empty<ValidationFailure>();
 
 			PrepareMessageFormatterForValidationError(context);
@@ -87,10 +324,10 @@ namespace FluentValidation.Validators {
 			return false;
 		}
 
-		protected abstract bool IsValid(PropertyValidatorContext context);
+		protected abstract bool IsValid(PropertyValidatorContext<T,TProperty> context);
 
 #pragma warning disable 1998
-		protected virtual async Task<bool> IsValidAsync(PropertyValidatorContext context, CancellationToken cancellation) {
+		protected virtual async Task<bool> IsValidAsync(PropertyValidatorContext<T,TProperty> context, CancellationToken cancellation) {
 			return IsValid(context);
 		}
 #pragma warning restore 1998
@@ -99,7 +336,7 @@ namespace FluentValidation.Validators {
 		/// Prepares the <see cref="MessageFormatter"/> of <paramref name="context"/> for an upcoming <see cref="ValidationFailure"/>.
 		/// </summary>
 		/// <param name="context">The validator context</param>
-		protected virtual void PrepareMessageFormatterForValidationError(PropertyValidatorContext context) {
+		protected virtual void PrepareMessageFormatterForValidationError(PropertyValidatorContext<T,TProperty> context) {
 			context.MessageFormatter.AppendPropertyName(context.DisplayName);
 			context.MessageFormatter.AppendPropertyValue(context.PropertyValue);
 
@@ -121,12 +358,10 @@ namespace FluentValidation.Validators {
 		/// </summary>
 		/// <param name="context">The validator context</param>
 		/// <returns>Returns an error validation result.</returns>
-		protected virtual ValidationFailure CreateValidationError(PropertyValidatorContext context) {
-			var messageBuilderContext = new MessageBuilderContext(context, this);
-
+		protected virtual ValidationFailure CreateValidationError(PropertyValidatorContext<T,TProperty> context) {
 			var error = context.Rule.MessageBuilder != null
-				? context.Rule.MessageBuilder(messageBuilderContext)
-				: messageBuilderContext.GetDefaultMessage();
+				? context.Rule.MessageBuilder(new MessageBuilderContext(context, this))
+				: GetErrorMessage(context);
 
 			var failure = new ValidationFailure(context.PropertyName, error, context.PropertyValue);
 			failure.FormattedMessagePlaceholderValues = context.MessageFormatter.PlaceholderValues;

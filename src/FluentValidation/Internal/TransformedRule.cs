@@ -19,6 +19,7 @@
 namespace FluentValidation.Internal {
 	using System;
 	using System.Collections.Generic;
+	using System.Linq;
 	using System.Linq.Expressions;
 	using System.Reflection;
 	using System.Threading;
@@ -143,7 +144,8 @@ namespace FluentValidation.Internal {
 			_inner.ClearValidators();
 		}
 
-		public IPropertyValidator CurrentValidator => _inner.CurrentValidator;
+		public IPropertyValidator<T,TTransformed> CurrentValidator
+			=> (IPropertyValidator<T, TTransformed>) _inner.Validators.LastOrDefault();
 
 		#endregion
 

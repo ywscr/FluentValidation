@@ -5,70 +5,67 @@
 	using System.Threading.Tasks;
 	using Internal;
 	using Results;
+
 	/// <summary>
 	/// Custom validator that allows for manual/direct creation of ValidationFailure instances.
 	/// </summary>
+	/// <typeparam name="TProperty"></typeparam>
 	/// <typeparam name="T"></typeparam>
-	public class CustomValidator<T> : PropertyValidator {
-		private readonly Action<T, CustomContext> _action;
-		private Func<T, CustomContext, CancellationToken, Task> _asyncAction;
+	public class CustomValidator<T, TProperty> : PropertyValidator<T,TProperty> {
+		private readonly Action<TProperty, CustomContext<T,TProperty>> _action;
+		private Func<TProperty, CustomContext<T,TProperty>, CancellationToken, Task> _asyncAction;
 		private readonly bool _isAsync;
 
 		/// <summary>
 		/// Creates a new instance of the CustomValidator
 		/// </summary>
 		/// <param name="action"></param>
-		public CustomValidator(Action<T, CustomContext> action) {
+		public CustomValidator(Action<TProperty, CustomContext<T,TProperty>> action) {
 			_isAsync = false;
 			_action = action;
-
-			_asyncAction = (x, ctx, cancel) => Task.Run(() => action(x, ctx), cancel);
 		}
 
 		/// <summary>
 		/// Creates a new instance of the CustomValidator.
 		/// </summary>
 		/// <param name="asyncAction"></param>
-		public CustomValidator(Func<T, CustomContext, CancellationToken, Task> asyncAction) {
+		public CustomValidator(Func<TProperty, CustomContext<T,TProperty>, CancellationToken, Task> asyncAction) {
 			_isAsync = true;
 			_asyncAction = asyncAction;
-			//TODO: For FV 9, throw an exception by default if async validator is being executed synchronously.
-			_action = (x, ctx) => Task.Run(() => _asyncAction(x, ctx, new CancellationToken())).GetAwaiter().GetResult();
 		}
 
-		public override IEnumerable<ValidationFailure> Validate(PropertyValidatorContext context) {
-			var customContext = new CustomContext(context);
-			_action((T) context.PropertyValue, customContext);
+		public override IEnumerable<ValidationFailure> Validate(PropertyValidatorContext<T,TProperty> context) {
+			var customContext = new CustomContext<T,TProperty>(context);
+			_action(context.PropertyValue, customContext);
 			return customContext.Failures;
 		}
 
-		public override async Task<IEnumerable<ValidationFailure>> ValidateAsync(PropertyValidatorContext context, CancellationToken cancellation) {
-			var customContext = new CustomContext(context);
-			await _asyncAction((T)context.PropertyValue, customContext, cancellation);
+		public override async Task<IEnumerable<ValidationFailure>> ValidateAsync(PropertyValidatorContext<T,TProperty> context, CancellationToken cancellation) {
+			var customContext = new CustomContext<T,TProperty>(context);
+			await _asyncAction(context.PropertyValue, customContext, cancellation);
 			return customContext.Failures;
 		}
 
-		protected override bool IsValid(PropertyValidatorContext context) {
-			throw new NotImplementedException();
-		}
+		protected sealed override bool IsValid(PropertyValidatorContext<T,TProperty> context)
+			=> throw new NotImplementedException();
 
 		public override bool ShouldValidateAsynchronously(IValidationContext context) {
-			return _isAsync && context.IsAsync();
+			return _isAsync;
 		}
 	}
 
 	/// <summary>
 	/// Custom validation context
 	/// </summary>
-	public class CustomContext {
-		private PropertyValidatorContext _context;
+	public class CustomContext<T,TProperty> {
+		private PropertyValidatorContext<T,TProperty> _context;
 		private List<ValidationFailure> _failures = new List<ValidationFailure>();
 
 		/// <summary>
 		/// Creates a new CustomContext
 		/// </summary>
 		/// <param name="context">The parent PropertyValidatorContext that represents this execution</param>
-		public CustomContext(PropertyValidatorContext context) {
+		public CustomContext(PropertyValidatorContext<T,TProperty> context) {
 			_context = context;
 		}
 
@@ -102,12 +99,12 @@
 
 		internal IEnumerable<ValidationFailure> Failures => _failures;
 
-		public IValidationRule Rule => _context.Rule;
+		public IValidationRule<T> Rule => _context.Rule;
 		public string PropertyName => _context.PropertyName;
 		public string DisplayName => _context.DisplayName;
 		public MessageFormatter MessageFormatter => _context.MessageFormatter;
-		public object InstanceToValidate => _context.InstanceToValidate;
-		public object PropertyValue => _context.PropertyValue;
-		public IValidationContext ParentContext => _context.ParentContext;
+		public T InstanceToValidate => _context.InstanceToValidate;
+		public TProperty PropertyValue => _context.PropertyValue;
+		public IValidationContext<T> ParentContext => _context.ParentContext;
 	}
 }

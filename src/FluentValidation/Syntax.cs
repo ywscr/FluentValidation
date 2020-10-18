@@ -45,13 +45,6 @@ namespace FluentValidation {
 		/// <returns></returns>
 		IRuleBuilderInitial<T, TNew> Transform<TNew>(Func<T, TProperty, TNew> transformationFunc);
 
-
-		/// <summary>
-		/// Configures the rule.
-		/// </summary>
-		/// <param name="configurator">Action to configure the object.</param>
-		/// <returns></returns>
-		IRuleBuilderInitial<T, TProperty> Configure(Action<IValidationRule<T, TProperty>> configurator);
 	}
 
 	/// <summary>
@@ -60,12 +53,6 @@ namespace FluentValidation {
 	/// <typeparam name="T"></typeparam>
 	/// <typeparam name="TProperty"></typeparam>
 	public interface IRuleBuilder<T, out TProperty> {
-		/// <summary>
-		/// Associates a validator with this the property for this rule builder.
-		/// </summary>
-		/// <param name="validator">The validator to set</param>
-		/// <returns></returns>
-		IRuleBuilderOptions<T, TProperty> SetValidator(IPropertyValidator validator);
 
 		/// <summary>
 		/// Associates an instance of IValidator with the current property rule.
@@ -98,15 +85,6 @@ namespace FluentValidation {
 	/// <typeparam name="T"></typeparam>
 	/// <typeparam name="TProperty"></typeparam>
 	public interface IRuleBuilderOptions<T, out TProperty> : IRuleBuilder<T, TProperty> {
-
-		/// <summary>
-		/// Configures the current object.
-		/// </summary>
-		/// <param name="configurator">Action to configure the object.</param>
-		/// <returns></returns>
-		IRuleBuilderOptions<T, TProperty> Configure(Action<IValidationRule<T, TProperty>> configurator);
-
-
 		/// <summary>
 		/// Creates a scope for declaring dependent rules.
 		/// </summary>
@@ -134,13 +112,6 @@ namespace FluentValidation {
 		/// <param name="transformationFunc"></param>
 		/// <returns></returns>
 		IRuleBuilderInitial<T, TNew> Transform<TNew>(Func<T, TElement, TNew> transformationFunc);
-
-		/// <summary>
-		/// Configures the rule object.
-		/// </summary>
-		/// <param name="configurator">Action to configure the object.</param>
-		/// <returns></returns>
-		IRuleBuilderInitialCollection<T, TElement> Configure(Action<ICollectionRule<T, TElement>> configurator);
 	}
 
 	/// <summary>

@@ -25,8 +25,8 @@ namespace FluentValidation.Validators {
 	/// <summary>
 	/// Base class for all comparison validators
 	/// </summary>
-	public abstract class AbstractComparisonValidator : PropertyValidator, IComparisonValidator {
-		readonly Func<object, object> _valueToCompareFunc;
+	public abstract class AbstractComparisonValidator<T> : PropertyValidator<T, IComparable>, IComparisonValidator {
+		readonly Func<T, IComparable> _valueToCompareFunc;
 		private readonly string _comparisonMemberDisplayName;
 
 		/// <summary>
@@ -41,7 +41,7 @@ namespace FluentValidation.Validators {
 		/// <param name="valueToCompareFunc"></param>
 		/// <param name="member"></param>
 		/// <param name="memberDisplayName"></param>
-		protected AbstractComparisonValidator(Func<object, object> valueToCompareFunc, MemberInfo member, string memberDisplayName) {
+		protected AbstractComparisonValidator(Func<T,IComparable> valueToCompareFunc, MemberInfo member, string memberDisplayName) {
 			_valueToCompareFunc = valueToCompareFunc;
 			_comparisonMemberDisplayName = memberDisplayName;
 			MemberToCompare = member;
@@ -52,7 +52,7 @@ namespace FluentValidation.Validators {
 		/// </summary>
 		/// <param name="context"></param>
 		/// <returns></returns>
-		protected sealed override bool IsValid(PropertyValidatorContext context) {
+		protected sealed override bool IsValid(PropertyValidatorContext<T,IComparable> context) {
 			if(context.PropertyValue == null) {
 				// If we're working with a nullable type then this rule should not be applied.
 				// If you want to ensure that it's never null then a NotNull rule should also be applied.
@@ -61,7 +61,7 @@ namespace FluentValidation.Validators {
 
 			var value = GetComparisonValue(context);
 
-			if (!IsValid((IComparable)context.PropertyValue, value)) {
+			if (!IsValid(context.PropertyValue, value)) {
 				context.MessageFormatter.AppendArgument("ComparisonValue", value);
 				context.MessageFormatter.AppendArgument("ComparisonProperty", _comparisonMemberDisplayName ?? "");
 				return false;
@@ -70,9 +70,9 @@ namespace FluentValidation.Validators {
 			return true;
 		}
 
-		public IComparable GetComparisonValue(PropertyValidatorContext context) {
+		public IComparable GetComparisonValue(PropertyValidatorContext<T,IComparable> context) {
 			if(_valueToCompareFunc != null) {
-				return (IComparable)_valueToCompareFunc(context.InstanceToValidate);
+				return _valueToCompareFunc(context.InstanceToValidate);
 			}
 
 			return (IComparable)ValueToCompare;
@@ -97,7 +97,7 @@ namespace FluentValidation.Validators {
 		/// <summary>
 		/// Metadata- the value being compared
 		/// </summary>
-		public object ValueToCompare { get; private set; }
+		public IComparable ValueToCompare { get; private set; }
 	}
 
 	/// <summary>
@@ -115,7 +115,7 @@ namespace FluentValidation.Validators {
 		/// <summary>
 		/// Metadata- the value being compared
 		/// </summary>
-		object ValueToCompare { get; }
+		IComparable ValueToCompare { get; }
 	}
 
 #pragma warning disable 1591

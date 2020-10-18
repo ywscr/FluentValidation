@@ -39,18 +39,6 @@ namespace FluentValidation.Internal {
 			_elementAccessor = elementAccessor;
 		}
 
-		private async Task<IEnumerable<ValidationFailure>> InvokePropertyValidatorAsync(IValidationContext<T> context, IPropertyValidator validator, string propertyName, TValue value, int index, CancellationToken cancellation) {
-			var newPropertyContext = new PropertyValidatorContext(context, _rule, propertyName, value);
-			newPropertyContext.MessageFormatter.AppendArgument("CollectionIndex", index);
-			return await validator.ValidateAsync(newPropertyContext, cancellation);
-		}
-
-		private IEnumerable<Results.ValidationFailure> InvokePropertyValidator(IValidationContext<T> context, IPropertyValidator validator, string propertyName, TValue value, int index) {
-			var newPropertyContext = new PropertyValidatorContext(context, _rule, propertyName, value);
-			newPropertyContext.MessageFormatter.AppendArgument("CollectionIndex", index);
-			return validator.Validate(newPropertyContext);
-		}
-
 		public sealed override IEnumerable<ValidationFailure> Validate(IValidationContext<T> context) {
 			string displayName = _rule.GetDisplayName(context);
 
@@ -277,16 +265,28 @@ namespace FluentValidation.Internal {
 			return failures;
 		}
 
-		private List<IPropertyValidator> GetValidatorsToExecute(IValidationContext<T> context) {
+		private async Task<IEnumerable<ValidationFailure>> InvokePropertyValidatorAsync(IValidationContext<T> context, IPropertyValidator<T,TValue> validator, string propertyName, TValue value, int index, CancellationToken cancellation) {
+			var newPropertyContext = new PropertyValidatorContext<T,TValue>(context, _rule, propertyName, value);
+			newPropertyContext.MessageFormatter.AppendArgument("CollectionIndex", index);
+			return await validator.ValidateAsync(newPropertyContext, cancellation);
+		}
+
+		private IEnumerable<Results.ValidationFailure> InvokePropertyValidator(IValidationContext<T> context, IPropertyValidator<T,TValue> validator, string propertyName, TValue value, int index) {
+			var newPropertyContext = new PropertyValidatorContext<T,TValue>(context, _rule, propertyName, value);
+			newPropertyContext.MessageFormatter.AppendArgument("CollectionIndex", index);
+			return validator.Validate(newPropertyContext);
+		}
+
+		private List<IPropertyValidator<T,TValue>> GetValidatorsToExecute(IValidationContext<T> context) {
 			// Loop over each validator and check if its condition allows it to run.
 			// This needs to be done prior to the main loop as within a collection rule
 			// validators' conditions still act upon the root object, not upon the collection property.
 			// This allows the property validators to cancel their execution prior to the collection
 			// being retrieved (thereby possibly avoiding NullReferenceExceptions).
 			// Must call ToList so we don't modify the original collection mid-loop.
-			var validators = _rule.Validators.ToList();
+			var validators = _rule.Validators.Cast<IPropertyValidator<T,TValue>>().ToList();
 			int validatorIndex = 0;
-			foreach (var validator in _rule.Validators) {
+			foreach (IPropertyValidator<T,TValue> validator in _rule.Validators) {
 				if (validator.Options.HasCondition) {
 					if (!validator.Options.InvokeCondition(context)) {
 						validators.RemoveAt(validatorIndex);
@@ -305,16 +305,16 @@ namespace FluentValidation.Internal {
 			return validators;
 		}
 
-		private async Task<List<IPropertyValidator>> GetValidatorsToExecuteAsync(IValidationContext<T> context, CancellationToken cancellation) {
+		private async Task<List<IPropertyValidator<T,TValue>>> GetValidatorsToExecuteAsync(IValidationContext<T> context, CancellationToken cancellation) {
 			// Loop over each validator and check if its condition allows it to run.
 			// This needs to be done prior to the main loop as within a collection rule
 			// validators' conditions still act upon the root object, not upon the collection property.
 			// This allows the property validators to cancel their execution prior to the collection
 			// being retrieved (thereby possibly avoiding NullReferenceExceptions).
 			// Must call ToList so we don't modify the original collection mid-loop.
-			var validators = _rule.Validators.ToList();
+			var validators = _rule.Validators.Cast<IPropertyValidator<T,TValue>>().ToList();
 			int validatorIndex = 0;
-			foreach (var validator in _rule.Validators) {
+			foreach (IPropertyValidator<T,TValue> validator in _rule.Validators) {
 				if (validator.Options.HasCondition) {
 					if (!validator.Options.InvokeCondition(context)) {
 						validators.RemoveAt(validatorIndex);

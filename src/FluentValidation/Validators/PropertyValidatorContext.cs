@@ -20,37 +20,79 @@ namespace FluentValidation.Validators {
 	using System;
 	using Internal;
 
-	public class PropertyValidatorContext {
-		private MessageFormatter _messageFormatter;
-		private object _propertyValue;
-		private Lazy<object> _propertyValueAccessor;
+	public interface IPropertyValidatorContext {
+		IValidationContext ParentContext { get; }
+		IValidationRule Rule { get; }
+		string PropertyName { get; }
+		string DisplayName { get; }
+		object InstanceToValidate { get; }
+		MessageFormatter MessageFormatter { get; }
+		object PropertyValue { get; }
+	}
 
-		public IValidationContext ParentContext { get; private set; }
-		public IValidationRule Rule { get; private set; }
+	public class PropertyValidatorContext<T,TProperty> : IPropertyValidatorContext {
+		private MessageFormatter _messageFormatter;
+		private TProperty _propertyValue;
+		private Lazy<TProperty> _propertyValueAccessor;
+
+		public IValidationContext<T> ParentContext { get; private set; }
+		public IValidationRule<T> Rule { get; private set; }
 		public string PropertyName { get; private set; }
 
 		public string DisplayName => Rule.GetDisplayName(ParentContext);
 
-		public object InstanceToValidate => ParentContext.InstanceToValidate;
+		public T InstanceToValidate => ParentContext.InstanceToValidate;
 		public MessageFormatter MessageFormatter => _messageFormatter ??= ValidatorOptions.Global.MessageFormatterFactory();
 
 		//Lazily load the property value
 		//to allow the delegating validator to cancel validation before value is obtained
-		public object PropertyValue
+		public TProperty PropertyValue
 			=> _propertyValueAccessor != null ? _propertyValueAccessor.Value : _propertyValue;
 
-		public PropertyValidatorContext(IValidationContext parentContext, IValidationRule rule, string propertyName, object propertyValue) {
+		object IPropertyValidatorContext.PropertyValue => PropertyValue;
+		IValidationRule IPropertyValidatorContext.Rule => Rule;
+		IValidationContext IPropertyValidatorContext.ParentContext => ParentContext;
+		object IPropertyValidatorContext.InstanceToValidate => InstanceToValidate;
+
+		public PropertyValidatorContext(IValidationContext<T> parentContext, IValidationRule<T> rule, string propertyName, TProperty propertyValue) {
 			ParentContext = parentContext;
 			Rule = rule;
 			PropertyName = propertyName;
 			_propertyValue = propertyValue;
 		}
 
-		public PropertyValidatorContext(IValidationContext parentContext, IValidationRule rule, string propertyName, Lazy<object> propertyValueAccessor) {
+		public PropertyValidatorContext(IValidationContext<T> parentContext, IValidationRule<T> rule, string propertyName, Lazy<TProperty> propertyValueAccessor) {
 			ParentContext = parentContext;
 			Rule = rule;
 			PropertyName = propertyName;
 			_propertyValueAccessor = propertyValueAccessor;
 		}
+	}
+
+	public class PropertyValidatorContext : PropertyValidatorContext<object, object>, IPropertyValidatorContext {
+		public new IValidationContext ParentContext { get; }
+		public new IValidationRule Rule { get; }
+		public new string PropertyName { get; }
+		public new string DisplayName => Rule.GetDisplayName(ParentContext);
+		public new object InstanceToValidate => ParentContext.InstanceToValidate;
+		public new object PropertyValue { get; }
+
+		public PropertyValidatorContext(IValidationContext parentContext, IValidationRule rule, string propertyName, object propertyValue)
+			: base(null, null, propertyName, propertyValue)
+		{
+			ParentContext = parentContext;
+			Rule = rule;
+			PropertyValue = propertyValue;
+			PropertyName = propertyName;
+		}
+
+		internal static PropertyValidatorContext Create<T, TProperty>(PropertyValidatorContext<T, TProperty> realContext) {
+			return new PropertyValidatorContext(realContext.ParentContext, realContext.Rule, realContext.PropertyName, realContext.PropertyValue);
+		}
+
+		internal PropertyValidatorContext<T, TProperty> ToGeneric<T,TProperty>() {
+			return new PropertyValidatorContext<T, TProperty>((IValidationContext<T>) ParentContext, (IValidationRule<T>) Rule, PropertyName, (TProperty) PropertyValue);
+		}
+
 	}
 }
